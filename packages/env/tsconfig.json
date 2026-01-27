@@ -1,0 +1,3 @@
+{
+  "extends": "@CreatorHub/config/tsconfig.base.json"
+}
