@@ -1,12 +1,12 @@
 "use client";
 
-import { authClient } from "@/lib/auth-client";
+import { useSession } from "@/components/session-provider";
 import { redirect } from "next/navigation";
 
 export default function DashboardPage() {
-  const { data: session, isPending } = authClient.useSession();
+  const { session, isLoading } = useSession();
 
-  if (isPending) {
+  if (isLoading) {
     return <div>Loading...</div>;
   }
 
