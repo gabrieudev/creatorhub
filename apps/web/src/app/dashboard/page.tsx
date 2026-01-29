@@ -1,33 +1,23 @@
-import { headers } from "next/headers";
-import { redirect } from "next/navigation";
+"use client";
 
 import { authClient } from "@/lib/auth-client";
+import { redirect } from "next/navigation";
 
-import Dashboard from "./dashboard";
+export default function DashboardPage() {
+  const { data: session, isPending } = authClient.useSession();
 
-export default async function DashboardPage() {
-  const session = await authClient.getSession({
-    fetchOptions: {
-      headers: await headers(),
-      throw: true,
-    },
-  });
+  if (isPending) {
+    return <div>Loading...</div>;
+  }
 
   if (!session?.user) {
     redirect("/login");
   }
 
-  const { data: customerState } = await authClient.customer.state({
-    fetchOptions: {
-      headers: await headers(),
-    },
-  });
-
   return (
     <div>
       <h1>Dashboard</h1>
-      <p>Welcome {session.user.name}</p>
-      <Dashboard session={session} customerState={customerState} />
+      <p>Welcome, {session.user.name}!</p>
     </div>
   );
 }
