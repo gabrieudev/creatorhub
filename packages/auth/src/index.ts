@@ -1,17 +1,17 @@
 import { db } from "@CreatorHub/db";
-import * as schema from "@CreatorHub/db/schema/auth";
+import * as schema from "@CreatorHub/db/schema/schema";
 import { env } from "@CreatorHub/env/server";
-import { polar, checkout, portal } from "@polar-sh/better-auth";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-
-import { polarClient } from "./lib/payments";
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: "pg",
-
-    schema: schema,
+    schema: {
+      user: schema.usersInApp,
+      session: schema.sessionInApp,
+      account: schema.accountInApp,
+    },
   }),
   trustedOrigins: [env.CORS_ORIGIN],
   emailAndPassword: {
@@ -24,24 +24,20 @@ export const auth = betterAuth({
       httpOnly: true,
     },
   },
-  plugins: [
-    polar({
-      client: polarClient,
-      createCustomerOnSignUp: true,
-      enableCustomerPortal: true,
-      use: [
-        checkout({
-          products: [
-            {
-              productId: "your-product-id",
-              slug: "pro",
-            },
-          ],
-          successUrl: env.POLAR_SUCCESS_URL,
-          authenticatedUsersOnly: true,
-        }),
-        portal(),
-      ],
-    }),
-  ],
+  user: {
+    additionalFields: {
+      lastSigninAt: {
+        type: "string",
+        required: false,
+      },
+      status: {
+        type: "string",
+        required: false,
+      },
+      profile: {
+        type: "json",
+        required: false,
+      },
+    },
+  },
 });
