@@ -3,6 +3,8 @@ import { env } from "@CreatorHub/env/server";
 import fastifyCors from "@fastify/cors";
 import Fastify from "fastify";
 
+const PORT = Number(env.PORT) || 3000;
+
 const baseCorsConfig = {
   origin: env.CORS_ORIGIN,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -50,10 +52,16 @@ fastify.get("/", async () => {
   return "OK";
 });
 
-fastify.listen({ port: 3000 }, (err) => {
-  if (err) {
-    fastify.log.error(err);
-    process.exit(1);
-  }
-  console.log("Server running on port 3000");
-});
+fastify.listen(
+  {
+    port: PORT,
+    host: "0.0.0.0",
+  },
+  (err) => {
+    if (err) {
+      fastify.log.error(err);
+      process.exit(1);
+    }
+    console.log(`🚀 Server running on 0.0.0.0:${PORT}`);
+  },
+);
