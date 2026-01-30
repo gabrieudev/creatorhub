@@ -4,24 +4,18 @@ import { useSession } from "@/providers/session-provider";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
-export default function DashboardPage() {
+export function AuthGuard({ children }: { children: React.ReactNode }) {
   const { session, isLoading } = useSession();
   const router = useRouter();
 
   useEffect(() => {
-    if (!isLoading && !session?.user) {
-      router.push("/login");
+    if (!isLoading && !session) {
+      router.push("/");
     }
   }, [isLoading, session, router]);
 
-  if (isLoading || !session?.user) {
-    return <div>Loading...</div>;
-  }
+  if (isLoading) return null;
+  if (!session) return null;
 
-  return (
-    <div>
-      <h1>Dashboard</h1>
-      <p>Welcome, {session.user.name}!</p>
-    </div>
-  );
+  return <>{children}</>;
 }
