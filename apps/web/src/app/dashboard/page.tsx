@@ -1,17 +1,21 @@
 "use client";
 
-import { useSession } from "@/components/session-provider";
-import { redirect } from "next/navigation";
+import { useSession } from "@/providers/session-provider";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 export default function DashboardPage() {
   const { session, isLoading } = useSession();
+  const router = useRouter();
 
-  if (isLoading) {
+  useEffect(() => {
+    if (!isLoading && !session?.user) {
+      router.push("/login");
+    }
+  }, [isLoading, session, router]);
+
+  if (isLoading || !session?.user) {
     return <div>Loading...</div>;
-  }
-
-  if (!session?.user) {
-    redirect("/login");
   }
 
   return (
