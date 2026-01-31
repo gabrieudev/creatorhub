@@ -2,17 +2,18 @@ import { useForm } from "@tanstack/react-form";
 import z from "zod";
 
 import { useSession } from "@/providers/session-provider";
-import Loader from "./loader";
+import { Eye, EyeOff, Loader2, Lock, Mail, User } from "lucide-react";
+import { useState } from "react";
+import { FieldWrapper } from "./FieldWrapper";
+import { InputWithIcon } from "./InputWithIcon";
 import { Button } from "./ui/button";
+import { Card } from "./ui/card";
 import { Input } from "./ui/input";
-import { Label } from "./ui/label";
+import Image from "next/image";
 
-export default function SignUpForm({
-  onSwitchToSignIn,
-}: {
-  onSwitchToSignIn: () => void;
-}) {
-  const { signUp, isLoading } = useSession();
+export default function SignUpForm() {
+  const { signUp } = useSession();
+  const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm({
     defaultValues: {
@@ -26,19 +27,24 @@ export default function SignUpForm({
     validators: {
       onSubmit: z.object({
         name: z.string().min(2, "Nome precisa ter pelo menos 2 caracteres"),
-        email: z.email("Endereço de email inválido"),
+        email: z.string().email("Endereço de email inválido"),
         password: z.string().min(8, "A senha deve ter pelo menos 8 caracteres"),
       }),
     },
   });
 
-  if (isLoading) {
-    return <Loader />;
-  }
-
   return (
-    <div className="mx-auto w-full mt-10 max-w-md p-6">
-      <h1 className="mb-6 text-center text-3xl font-bold">Criar conta</h1>
+    <Card className="max-w-md w-full p-6 sm:p-8">
+      <div className="flex items-center justify-center mb-6">
+        <div className="h-12 w-12 rounded-lg bg-linear-to-r flex items-center justify-center">
+          <Image src="/logo.png" alt="logo" width={72} height={72} />
+        </div>
+      </div>
+
+      <h1 className="mb-2 text-center text-2xl font-extrabold">Criar conta</h1>
+      <p className="mb-6 text-center text-sm text-slate-300">
+        Preencha seus dados para criar uma nova conta
+      </p>
 
       <form
         onSubmit={(e) => {
@@ -47,25 +53,33 @@ export default function SignUpForm({
           form.handleSubmit();
         }}
         className="space-y-4"
+        noValidate
       >
         <div>
           <form.Field name="name">
             {(field) => (
-              <div className="space-y-2">
-                <Label htmlFor={field.name}>Name</Label>
-                <Input
+              <FieldWrapper label="Nome">
+                <InputWithIcon
                   id={field.name}
                   name={field.name}
                   value={field.state.value}
                   onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
+                  onChange={(e: any) => field.handleChange(e.target.value)}
+                  icon={<User size={16} />}
                 />
-                {field.state.meta.errors.map((error) => (
-                  <p key={error?.message} className="text-red-500">
-                    {error?.message}
-                  </p>
-                ))}
-              </div>
+
+                <div aria-live="polite">
+                  {field.state.meta.errors.map((error) => (
+                    <p
+                      key={error?.message}
+                      id={`${field.name}-error`}
+                      className="text-sm text-red-400 mt-1"
+                    >
+                      {error?.message}
+                    </p>
+                  ))}
+                </div>
+              </FieldWrapper>
             )}
           </form.Field>
         </div>
@@ -73,22 +87,29 @@ export default function SignUpForm({
         <div>
           <form.Field name="email">
             {(field) => (
-              <div className="space-y-2">
-                <Label htmlFor={field.name}>Email</Label>
-                <Input
+              <FieldWrapper label="Email">
+                <InputWithIcon
                   id={field.name}
                   name={field.name}
                   type="email"
                   value={field.state.value}
                   onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
+                  onChange={(e: any) => field.handleChange(e.target.value)}
+                  icon={<Mail size={16} />}
                 />
-                {field.state.meta.errors.map((error) => (
-                  <p key={error?.message} className="text-red-500">
-                    {error?.message}
-                  </p>
-                ))}
-              </div>
+
+                <div aria-live="polite">
+                  {field.state.meta.errors.map((error) => (
+                    <p
+                      key={error?.message}
+                      id={`${field.name}-error`}
+                      className="text-sm text-red-400 mt-1"
+                    >
+                      {error?.message}
+                    </p>
+                  ))}
+                </div>
+              </FieldWrapper>
             )}
           </form.Field>
         </div>
@@ -96,22 +117,47 @@ export default function SignUpForm({
         <div>
           <form.Field name="password">
             {(field) => (
-              <div className="space-y-2">
-                <Label htmlFor={field.name}>Senha</Label>
-                <Input
-                  id={field.name}
-                  name={field.name}
-                  type="password"
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                />
-                {field.state.meta.errors.map((error) => (
-                  <p key={error?.message} className="text-red-500">
-                    {error?.message}
-                  </p>
-                ))}
-              </div>
+              <FieldWrapper label="Senha">
+                <div className="relative">
+                  <div className="pointer-events-none absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+                    <Lock size={16} />
+                  </div>
+
+                  <Input
+                    id={field.name}
+                    name={field.name}
+                    type={showPassword ? "text" : "password"}
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(e: any) => field.handleChange(e.target.value)}
+                    className="pl-10"
+                    aria-describedby={`${field.name}-error`}
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((s) => !s)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400"
+                    aria-label={
+                      showPassword ? "Ocultar senha" : "Mostrar senha"
+                    }
+                  >
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+
+                  <div aria-live="polite">
+                    {field.state.meta.errors.map((error) => (
+                      <p
+                        key={error?.message}
+                        id={`${field.name}-error`}
+                        className="text-sm text-red-400 mt-1"
+                      >
+                        {error?.message}
+                      </p>
+                    ))}
+                  </div>
+                </div>
+              </FieldWrapper>
             )}
           </form.Field>
         </div>
@@ -120,24 +166,21 @@ export default function SignUpForm({
           {(state) => (
             <Button
               type="submit"
-              className="w-full"
+              className="w-full mt-2"
               disabled={!state.canSubmit || state.isSubmitting}
+              aria-disabled={!state.canSubmit || state.isSubmitting}
             >
-              {state.isSubmitting ? "Enviando..." : "Criar conta"}
+              {state.isSubmitting ? (
+                <span className="inline-flex items-center gap-2">
+                  <Loader2 className="animate-spin h-6 w-6" /> Enviando...
+                </span>
+              ) : (
+                "Criar conta"
+              )}
             </Button>
           )}
         </form.Subscribe>
       </form>
-
-      <div className="mt-4 text-center">
-        <Button
-          variant="link"
-          onClick={onSwitchToSignIn}
-          className="text-indigo-600 hover:text-indigo-800"
-        >
-          Já tem uma conta? Entre aqui
-        </Button>
-      </div>
-    </div>
+    </Card>
   );
 }

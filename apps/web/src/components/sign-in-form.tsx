@@ -1,17 +1,20 @@
+"use client";
+
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { useSession } from "@/providers/session-provider";
 import { useForm } from "@tanstack/react-form";
+import { Eye, EyeOff, Loader2, Lock, Mail } from "lucide-react";
+import Image from "next/image";
+import { useState } from "react";
 import z from "zod";
-import Loader from "./loader";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
+import { FieldWrapper } from "./FieldWrapper";
+import { InputWithIcon } from "./InputWithIcon";
 
-export default function SignInForm({
-  onSwitchToSignUp,
-}: {
-  onSwitchToSignUp: () => void;
-}) {
-  const { signIn, isLoading } = useSession();
+export default function SignInForm() {
+  const { signIn } = useSession();
+  const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm({
     defaultValues: {
@@ -23,21 +26,26 @@ export default function SignInForm({
     },
     validators: {
       onSubmit: z.object({
-        email: z.email("Email inválido"),
+        email: z.string().email("Email inválido"),
         password: z.string().min(8, "A senha deve ter pelo menos 8 caracteres"),
       }),
     },
   });
 
-  if (isLoading) {
-    return <Loader />;
-  }
-
   return (
-    <div className="mx-auto w-full mt-10 max-w-md p-6">
-      <h1 className="mb-6 text-center text-3xl font-bold">
+    <Card className="max-w-md w-full p-6 sm:p-8">
+      <div className="flex items-center justify-center mb-6">
+        <div className="h-12 w-12 rounded-lg bg-linear-to-r flex items-center justify-center">
+          <Image src="/logo.png" width={72} height={72} alt="logo" />
+        </div>
+      </div>
+
+      <h1 className="mb-2 text-center text-2xl font-extrabold">
         Bem-vindo de volta
       </h1>
+      <p className="mb-6 text-center text-sm text-slate-300">
+        Entre com sua conta para continuar
+      </p>
 
       <form
         onSubmit={(e) => {
@@ -46,26 +54,34 @@ export default function SignInForm({
           form.handleSubmit();
         }}
         className="space-y-4"
+        noValidate
       >
         <div>
           <form.Field name="email">
             {(field) => (
-              <div className="space-y-2">
-                <Label htmlFor={field.name}>Email</Label>
-                <Input
+              <FieldWrapper label="Email">
+                <InputWithIcon
                   id={field.name}
                   name={field.name}
                   type="email"
                   value={field.state.value}
                   onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
+                  onChange={(e: any) => field.handleChange(e.target.value)}
+                  icon={<Mail size={16} />}
                 />
-                {field.state.meta.errors.map((error) => (
-                  <p key={error?.message} className="text-red-500">
-                    {error?.message}
-                  </p>
-                ))}
-              </div>
+
+                <div aria-live="polite">
+                  {field.state.meta.errors.map((error) => (
+                    <p
+                      key={error?.message}
+                      id={`${field.name}-error`}
+                      className="text-sm text-red-400 mt-1"
+                    >
+                      {error?.message}
+                    </p>
+                  ))}
+                </div>
+              </FieldWrapper>
             )}
           </form.Field>
         </div>
@@ -73,22 +89,48 @@ export default function SignInForm({
         <div>
           <form.Field name="password">
             {(field) => (
-              <div className="space-y-2">
-                <Label htmlFor={field.name}>Senha</Label>
-                <Input
-                  id={field.name}
-                  name={field.name}
-                  type="password"
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                />
-                {field.state.meta.errors.map((error) => (
-                  <p key={error?.message} className="text-red-500">
-                    {error?.message}
-                  </p>
-                ))}
-              </div>
+              <FieldWrapper label="Senha">
+                <div className="relative">
+                  <div className="pointer-events-none absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+                    <Lock size={16} />
+                  </div>
+
+                  <Input
+                    id={field.name}
+                    name={field.name}
+                    type={showPassword ? "text" : "password"}
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(e: any) => field.handleChange(e.target.value)}
+                    className="pl-10"
+                    aria-describedby={`${field.name}-error`}
+                  />
+
+                  <button
+                    type="button"
+                    tabIndex={0}
+                    onClick={() => setShowPassword((s) => !s)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400"
+                    aria-label={
+                      showPassword ? "Ocultar senha" : "Mostrar senha"
+                    }
+                  >
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+
+                  <div aria-live="polite">
+                    {field.state.meta.errors.map((error) => (
+                      <p
+                        key={error?.message}
+                        id={`${field.name}-error`}
+                        className="text-sm text-red-400 mt-1"
+                      >
+                        {error?.message}
+                      </p>
+                    ))}
+                  </div>
+                </div>
+              </FieldWrapper>
             )}
           </form.Field>
         </div>
@@ -97,24 +139,21 @@ export default function SignInForm({
           {(state) => (
             <Button
               type="submit"
-              className="w-full"
+              className="w-full mt-2"
               disabled={!state.canSubmit || state.isSubmitting}
+              aria-disabled={!state.canSubmit || state.isSubmitting}
             >
-              {state.isSubmitting ? "Enviando..." : "Entrar"}
+              {state.isSubmitting ? (
+                <span className="inline-flex items-center gap-2">
+                  <Loader2 className="animate-spin h-6 w-6" /> Enviando...
+                </span>
+              ) : (
+                "Entrar"
+              )}
             </Button>
           )}
         </form.Subscribe>
       </form>
-
-      <div className="mt-4 text-center">
-        <Button
-          variant="link"
-          onClick={onSwitchToSignUp}
-          className="text-indigo-600 hover:text-indigo-800"
-        >
-          Precisa criar uma conta? Crie uma aqui.
-        </Button>
-      </div>
-    </div>
+    </Card>
   );
 }

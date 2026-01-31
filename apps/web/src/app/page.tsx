@@ -44,11 +44,25 @@ import {
   Workflow,
   X,
 } from "lucide-react";
+import { DialogTitle } from "@radix-ui/react-dialog";
+
+export type Plan = {
+  name: string;
+  popular?: boolean;
+  price: string;
+  period: string;
+  savings?: string;
+  originalPrice?: string;
+  buttonVariant?: "default" | "outline" | "ghost";
+  buttonText: string;
+  features: string[];
+};
 
 export default function LandingPage() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [activeFeature, setActiveFeature] = useState(0);
   const [activePricingTab, setActivePricingTab] = useState("monthly");
+  const [activeAuthTab, setActiveAuthTab] = useState("signIn");
 
   useEffect(() => {
     const handleScroll = () => {
@@ -65,7 +79,7 @@ export default function LandingPage() {
       description:
         "Planeje, agende e acompanhe todas as publicações em múltiplas plataformas em uma visão única.",
       color: "from-blue-500 to-purple-600",
-      gradient: "bg-gradient-to-r from-blue-500 to-purple-600",
+      gradient: "bg-linear-to-r from-blue-500 to-purple-600",
     },
     {
       icon: <DollarSign className="h-6 w-6" />,
@@ -73,7 +87,7 @@ export default function LandingPage() {
       description:
         "Rastreie receitas, splits automáticos, invoices e relatórios financeiros em tempo real.",
       color: "from-red-500 to-purple-600",
-      gradient: "bg-gradient-to-r from-red-500 to-purple-600",
+      gradient: "bg-linear-to-r from-red-500 to-purple-600",
     },
     {
       icon: <Users className="h-6 w-6" />,
@@ -81,7 +95,7 @@ export default function LandingPage() {
       description:
         "Trabalhe com editores, managers e marcas com permissões granulares e workflow integrado.",
       color: "from-purple-600 to-blue-500",
-      gradient: "bg-gradient-to-r from-purple-600 to-blue-500",
+      gradient: "bg-linear-to-r from-purple-600 to-blue-500",
     },
   ];
 
@@ -91,158 +105,136 @@ export default function LandingPage() {
       role: "Creator - 2M+ seguidores",
       content:
         "O CreatorHub transformou minha produtividade. Agora consigo gerenciar toda minha equipe e finanças em um só lugar.",
-      avatarColor: "bg-gradient-to-r from-blue-500 to-purple-600",
+      avatarColor: "bg-linear-to-r from-blue-500 to-purple-600",
     },
     {
       name: "Pedro Costa",
       role: "Agency Owner",
       content:
         "A ferramenta mais completa do mercado para gestão de criadores. O split automático de receitas é revolucionário.",
-      avatarColor: "bg-gradient-to-r from-red-500 to-purple-600",
+      avatarColor: "bg-linear-to-r from-red-500 to-purple-600",
     },
     {
       name: "Mariana Lima",
       role: "Content Manager",
       content:
         "O sistema de checklists e versionamento salvou nosso time. Finalmente temos um fluxo organizado de produção.",
-      avatarColor: "bg-gradient-to-r from-purple-600 to-blue-500",
+      avatarColor: "bg-linear-to-r from-purple-600 to-blue-500",
     },
   ];
 
-  const pricingPlans = {
+  const pricingPlans: Record<"monthly" | "yearly", Plan[]> = {
     monthly: [
       {
         name: "Starter",
-        price: "Grátis",
-        period: "/sempre",
-        features: [
-          "Até 50 conteúdos/mês",
-          "1 usuário incluído",
-          "Calendário básico",
-          "Checklists simples",
-          "Suporte por email",
-          "Armazenamento 5GB",
-          "Relatórios básicos",
-          "Integração YouTube",
-        ],
-        buttonText: "Começar Agora",
-        buttonVariant: "outline" as const,
         popular: false,
+        price: "R$19",
+        period: "/mês",
+        savings: "0",
+        originalPrice: undefined,
+        buttonVariant: "outline",
+        buttonText: "Começar Grátis",
+        features: [
+          "1 projeto ativo",
+          "10 uploads/mês",
+          "Suporte por e-mail",
+          "Exportação básica",
+          "Acesso à comunidade",
+        ],
       },
       {
         name: "Pro",
-        price: "R$97",
-        period: "/mês",
-        features: [
-          "Conteúdos ilimitados",
-          "Até 5 usuários",
-          "Split automático",
-          "Integrações premium",
-          "Dashboard avançado",
-          "Armazenamento 50GB",
-          "Relatórios detalhados",
-          "Suporte prioritário",
-          "API básica",
-          "White-label básico",
-        ],
-        buttonText: "Experimentar 14 dias",
-        buttonVariant: "default" as const,
         popular: true,
+        price: "R$49",
+        period: "/mês",
+        savings: "0",
+        originalPrice: undefined,
+        buttonVariant: "default",
+        buttonText: "Assinar Pro",
+        features: [
+          "Projetos ilimitados",
+          "Uploads ilimitados",
+          "Integrações com ferramentas",
+          "Painel de analytics",
+          "Prioridade no suporte",
+        ],
       },
       {
-        name: "Agência",
-        price: "R$297",
-        period: "/mês",
-        features: [
-          "Usuários ilimitados",
-          "White-label completo",
-          "Suporte 24/7",
-          "API completa",
-          "Relatórios customizados",
-          "Armazenamento 500GB",
-          "Onboarding dedicado",
-          "Treinamento da equipe",
-          "Dashboard multi-conta",
-          "Integrações avançadas",
-        ],
-        buttonText: "Falar com Vendas",
-        buttonVariant: "default" as const,
+        name: "Enterprise",
         popular: false,
+        price: "R$149",
+        period: "/mês",
+        savings: "0",
+        originalPrice: undefined,
+        buttonVariant: "default",
+        buttonText: "Fale com vendas",
+        features: [
+          "SLA e suporte dedicado",
+          "Single Sign-On (SSO)",
+          "Contas multi-usuário",
+          "Relatórios personalizados",
+          "Onboarding e treinamento",
+        ],
       },
     ],
+
     yearly: [
       {
         name: "Starter",
-        price: "Grátis",
-        period: "/sempre",
-        features: [
-          "Até 50 conteúdos/mês",
-          "1 usuário incluído",
-          "Calendário básico",
-          "Checklists simples",
-          "Suporte por email",
-          "Armazenamento 5GB",
-          "Relatórios básicos",
-          "Integração YouTube",
-        ],
-        buttonText: "Começar Agora",
-        buttonVariant: "outline" as const,
         popular: false,
-        savings: "0",
+        price: "R$15",
+        period: "/mês (faturado anualmente)",
+        savings: "20",
+        originalPrice: "R$19",
+        buttonVariant: "outline",
+        buttonText: "Começar Grátis",
+        features: [
+          "1 projeto ativo",
+          "10 uploads/mês",
+          "Suporte por e-mail",
+          "Exportação básica",
+          "Acesso à comunidade",
+        ],
       },
       {
         name: "Pro",
-        price: "R$77",
-        originalPrice: "R$97",
-        period: "/mês",
-        features: [
-          "Conteúdos ilimitados",
-          "Até 5 usuários",
-          "Split automático",
-          "Integrações premium",
-          "Dashboard avançado",
-          "Armazenamento 50GB",
-          "Relatórios detalhados",
-          "Suporte prioritário",
-          "API básica",
-          "White-label básico",
-          "2 meses grátis",
-          "Backup premium incluído",
-        ],
-        buttonText: "Economizar 20%",
-        buttonVariant: "default" as const,
         popular: true,
+        price: "R$39",
+        period: "/mês (faturado anualmente)",
         savings: "20",
+        originalPrice: "R$49",
+        buttonVariant: "default",
+        buttonText: "Assinar Pro (Anual)",
+        features: [
+          "Projetos ilimitados",
+          "Uploads ilimitados",
+          "Integrações com ferramentas",
+          "Painel de analytics",
+          "Prioridade no suporte",
+        ],
       },
       {
-        name: "Agência",
-        price: "R$237",
-        originalPrice: "R$297",
-        period: "/mês",
-        features: [
-          "Usuários ilimitados",
-          "White-label completo",
-          "Suporte 24/7",
-          "API completa",
-          "Relatórios customizados",
-          "Armazenamento 500GB",
-          "Onboarding dedicado",
-          "Treinamento da equipe",
-          "Dashboard multi-conta",
-          "Integrações avançadas",
-          "3 meses grátis",
-          "Consultoria gratuita",
-        ],
-        buttonText: "Economizar R$720",
-        buttonVariant: "default" as const,
+        name: "Enterprise",
         popular: false,
+        price: "R$119",
+        period: "/mês (faturado anualmente)",
         savings: "20",
+        originalPrice: "R$149",
+        buttonVariant: "default",
+        buttonText: "Fale com vendas",
+        features: [
+          "SLA e suporte dedicado",
+          "Single Sign-On (SSO)",
+          "Contas multi-usuário",
+          "Relatórios personalizados",
+          "Onboarding e treinamento",
+        ],
       },
     ],
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 via-white to-gray-50">
+    <div className="min-h-screen bg-linear-to-b from-gray-50 via-white to-gray-50">
       {/* Header/Navigation */}
       <header
         className={cn(
@@ -256,7 +248,7 @@ export default function LandingPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <Image src="/logo.png" alt="Logo" width={40} height={40} />
-              <span className="text-xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-red-600 bg-clip-text text-transparent">
+              <span className="text-xl font-bold bg-linear-to-r from-red-600 via-purple-600 to-blue-600 bg-clip-text text-transparent">
                 CreatorHub
               </span>
             </div>
@@ -265,11 +257,11 @@ export default function LandingPage() {
             <NavigationMenu className="hidden lg:flex">
               <NavigationMenuList>
                 <NavigationMenuItem>
-                  <NavigationMenuTrigger className="text-gray-800 hover:text-blue-600 bg-transparent data-[state=open]:bg-gray-100">
+                  <NavigationMenuTrigger className="bg-transparent text-slate-800 hover:bg-slate-100 hover:text-slate-900 data-[state=open]:bg-slate-200! data-[state=open]:text-blue-600! rounded-md transition-colors">
                     Funcionalidades
                   </NavigationMenuTrigger>
                   <NavigationMenuContent className="bg-white border border-gray-200 shadow-xl">
-                    <div className="grid gap-3 p-6 md:w-[500px] lg:w-[600px]">
+                    <div className="grid gap-3 p-6 md:w-125 lg:w-150">
                       <div className="grid grid-cols-3 gap-4">
                         <div className="space-y-3">
                           <div className="flex items-center space-x-2">
@@ -315,11 +307,11 @@ export default function LandingPage() {
                   </NavigationMenuContent>
                 </NavigationMenuItem>
                 <NavigationMenuItem>
-                  <NavigationMenuTrigger className="text-gray-800 hover:text-blue-600 bg-transparent data-[state=open]:bg-gray-100">
+                  <NavigationMenuTrigger className="bg-transparent text-slate-800 hover:bg-slate-100 hover:text-slate-900 data-[state=open]:bg-slate-200! data-[state=open]:text-blue-600! rounded-md transition-colors">
                     Soluções
                   </NavigationMenuTrigger>
                   <NavigationMenuContent className="bg-white border border-gray-200 shadow-xl">
-                    <div className="p-6 md:w-[400px]">
+                    <div className="p-6 md:w-100">
                       <div className="space-y-6">
                         <div className="space-y-3">
                           <h4 className="font-bold text-gray-900 text-lg">
@@ -354,7 +346,7 @@ export default function LandingPage() {
                 <NavigationMenuItem>
                   <NavigationMenuLink
                     href="#pricing"
-                    className="px-4 py-2 text-gray-800 hover:text-blue-600 font-medium"
+                    className="px-4 py-2 text-gray-800 hover:text-blue-600 hover:bg-gray-100 font-medium"
                   >
                     Preços
                   </NavigationMenuLink>
@@ -362,7 +354,7 @@ export default function LandingPage() {
                 <NavigationMenuItem>
                   <NavigationMenuLink
                     href="#testimonials"
-                    className="px-4 py-2 text-gray-800 hover:text-blue-600 font-medium"
+                    className="px-4 py-2 text-gray-800 hover:text-blue-600 hover:bg-gray-100 font-medium"
                   >
                     Depoimentos
                   </NavigationMenuLink>
@@ -370,7 +362,7 @@ export default function LandingPage() {
                 <NavigationMenuItem>
                   <NavigationMenuLink
                     href="#faq"
-                    className="px-4 py-2 text-gray-800 hover:text-blue-600 font-medium"
+                    className="px-4 py-2 text-gray-800 hover:text-blue-600 hover:bg-gray-100 font-medium"
                   >
                     FAQ
                   </NavigationMenuLink>
@@ -383,25 +375,29 @@ export default function LandingPage() {
               <Dialog>
                 <DialogTrigger asChild>
                   <Button
-                    variant="ghost"
-                    className="text-gray-700 hover:text-blue-600 hover:bg-gray-100"
+                    variant="default"
+                    className="text-black bg-white hover:bg-gray-100 shadow-md hover:shadow-lg cursor-pointer"
                   >
-                    Entrar
+                    <DialogTitle className="text-black hover:text-blue-600">
+                      Entrar
+                    </DialogTitle>
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-[425px] bg-white">
-                  <SignInForm onSwitchToSignUp={() => {}} />
+                <DialogContent className="sm:max-w-106.25 bg-slate-900">
+                  <SignInForm />
                 </DialogContent>
               </Dialog>
 
               <Dialog>
                 <DialogTrigger asChild>
-                  <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-md hover:shadow-lg">
-                    Começar Grátis
+                  <Button className="bg-linear-to-r cursor-pointer from-red-600 to-blue-600 hover:from-blue-700 hover:to-red-700 shadow-md hover:shadow-lg">
+                    <DialogTitle className="text-white">
+                      Começar Grátis
+                    </DialogTitle>
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-[425px] bg-white">
-                  <SignUpForm onSwitchToSignIn={() => {}} />
+                <DialogContent className="sm:max-w-106.25">
+                  <SignUpForm />
                 </DialogContent>
               </Dialog>
             </div>
@@ -410,15 +406,15 @@ export default function LandingPage() {
       </header>
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden pt-20 pb-32 bg-gradient-to-b from-white to-gray-50">
+      <section className="relative overflow-hidden pt-20 pb-32 bg-linear-to-b from-white to-gray-50">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl" />
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-red-500/5 rounded-full blur-3xl" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-purple-500/3 rounded-full blur-3xl" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-125 h-125 bg-purple-500/3 rounded-full blur-3xl" />
 
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-3xl mx-auto text-center">
             <h1 className="text-5xl md:text-7xl font-bold mb-6">
-              <span className="block bg-gradient-to-r from-blue-600 via-purple-600 to-red-600 bg-clip-text text-transparent">
+              <span className="block bg-linear-to-r from-red-600 via-purple-600 to-blue-600 bg-clip-text text-transparent">
                 Tudo que você precisa
               </span>
               <span className="block text-gray-900">
@@ -436,14 +432,14 @@ export default function LandingPage() {
                 <DialogTrigger asChild>
                   <Button
                     size="lg"
-                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-6 text-lg shadow-lg hover:shadow-xl"
+                    className="bg-linear-to-r from-red-600 to-blue-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-6 text-lg shadow-lg hover:shadow-xl"
                   >
-                    Começar Gratuitamente
+                    <DialogTitle>Começar Gratuitamente</DialogTitle>
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-[425px] bg-white">
-                  <SignUpForm onSwitchToSignIn={() => {}} />
+                <DialogContent className="sm:max-w-106.25">
+                  <SignUpForm />
                 </DialogContent>
               </Dialog>
             </div>
@@ -451,25 +447,25 @@ export default function LandingPage() {
             {/* Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-2xl mx-auto bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-sm border border-gray-100">
               <div className="text-center">
-                <div className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent">
+                <div className="text-3xl font-bold bg-linear-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent">
                   10K+
                 </div>
                 <div className="text-gray-700 font-medium">Criadores</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-purple-400 bg-clip-text text-transparent">
+                <div className="text-3xl font-bold bg-linear-to-r from-purple-600 to-purple-400 bg-clip-text text-transparent">
                   50K+
                 </div>
                 <div className="text-gray-700 font-medium">Conteúdos/mês</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold bg-gradient-to-r from-red-600 to-red-400 bg-clip-text text-transparent">
+                <div className="text-3xl font-bold bg-linear-to-r from-red-600 to-red-400 bg-clip-text text-transparent">
                   R$5M+
                 </div>
                 <div className="text-gray-700 font-medium">Processados</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-red-600 bg-clip-text text-transparent">
+                <div className="text-3xl font-bold bg-linear-to-r from-blue-600 via-purple-600 to-red-600 bg-clip-text text-transparent">
                   99.9%
                 </div>
                 <div className="text-gray-700 font-medium">Satisfação</div>
@@ -485,7 +481,7 @@ export default function LandingPage() {
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold mb-4 text-gray-900">
               Funcionalidades
-              <span className="block bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              <span className="block bg-linear-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                 Poderosas
               </span>
             </h2>
@@ -543,7 +539,7 @@ export default function LandingPage() {
                         "Integração automática",
                       ].map((item, i) => (
                         <li key={i} className="flex items-center">
-                          <CheckCircle className="h-5 w-5 text-green-500 mr-3 flex-shrink-0" />
+                          <CheckCircle className="h-5 w-5 text-green-500 mr-3 shrink-0" />
                           <span className="text-gray-700">{item}</span>
                         </li>
                       ))}
@@ -555,15 +551,15 @@ export default function LandingPage() {
           </div>
 
           {/* Feature Showcase */}
-          <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl p-8 md:p-12 border border-blue-100">
+          <div className="bg-linear-to-br from-blue-50 to-purple-50 rounded-2xl p-8 md:p-12 border border-blue-100">
             <div className="grid md:grid-cols-2 gap-12 items-center">
               <div>
-                <Badge className="mb-4 bg-gradient-to-r from-blue-500 to-purple-500 text-white border-0">
+                <Badge className="mb-4 bg-linear-to-r from-red-500 to-blue-500 text-white border-0">
                   Novidade
                 </Badge>
                 <h3 className="text-3xl font-bold mb-6 text-gray-900">
                   Dashboard Inteligente em
-                  <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-red-600 bg-clip-text text-transparent">
+                  <span className="bg-linear-to-r from-red-600 via-purple-600 to-blue-600 bg-clip-text text-transparent">
                     {" "}
                     Tempo Real
                   </span>
@@ -574,7 +570,7 @@ export default function LandingPage() {
                 </p>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="flex items-center space-x-3 p-4 bg-white/70 rounded-lg border border-gray-200">
-                    <div className="h-12 w-12 rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center">
+                    <div className="h-12 w-12 rounded-lg bg-linear-to-r from-blue-500 to-blue-600 flex items-center justify-center">
                       <LayoutDashboard className="h-6 w-6 text-white" />
                     </div>
                     <div>
@@ -587,7 +583,7 @@ export default function LandingPage() {
                     </div>
                   </div>
                   <div className="flex items-center space-x-3 p-4 bg-white/70 rounded-lg border border-gray-200">
-                    <div className="h-12 w-12 rounded-lg bg-gradient-to-r from-purple-500 to-purple-600 flex items-center justify-center">
+                    <div className="h-12 w-12 rounded-lg bg-linear-to-r from-purple-500 to-purple-600 flex items-center justify-center">
                       <TrendingUp className="h-6 w-6 text-white" />
                     </div>
                     <div>
@@ -602,7 +598,7 @@ export default function LandingPage() {
                 </div>
               </div>
               <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-2xl blur-2xl" />
+                <div className="absolute inset-0 bg-linear-to-r from-blue-500/20 to-purple-500/20 rounded-2xl blur-2xl" />
                 <div className="relative bg-white rounded-2xl shadow-2xl p-6 border border-gray-200">
                   <div className="flex items-center justify-between mb-6">
                     <div className="flex space-x-2">
@@ -615,7 +611,7 @@ export default function LandingPage() {
                     </div>
                   </div>
                   <div className="grid grid-cols-3 gap-4 mb-6">
-                    <div className="h-24 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 p-4 border border-blue-200">
+                    <div className="h-24 rounded-xl bg-linear-to-br from-blue-50 to-blue-100 p-4 border border-blue-200">
                       <div className="text-2xl font-bold text-blue-700">
                         85%
                       </div>
@@ -626,7 +622,7 @@ export default function LandingPage() {
                         <div className="h-full bg-blue-500 rounded-full w-4/5" />
                       </div>
                     </div>
-                    <div className="h-24 rounded-xl bg-gradient-to-br from-purple-50 to-purple-100 p-4 border border-purple-200">
+                    <div className="h-24 rounded-xl bg-linear-to-br from-purple-50 to-purple-100 p-4 border border-purple-200">
                       <div className="text-2xl font-bold text-purple-700">
                         R$12.5K
                       </div>
@@ -637,7 +633,7 @@ export default function LandingPage() {
                         <div className="h-full bg-purple-500 rounded-full w-3/4" />
                       </div>
                     </div>
-                    <div className="h-24 rounded-xl bg-gradient-to-br from-red-50 to-red-100 p-4 border border-red-200">
+                    <div className="h-24 rounded-xl bg-linear-to-br from-red-50 to-red-100 p-4 border border-red-200">
                       <div className="text-2xl font-bold text-red-700">24</div>
                       <div className="text-sm text-red-600 font-medium">
                         Conteúdos
@@ -647,7 +643,7 @@ export default function LandingPage() {
                       </div>
                     </div>
                   </div>
-                  <div className="h-36 rounded-xl bg-gradient-to-r from-blue-50 to-purple-50 p-4 border border-gray-200">
+                  <div className="h-36 rounded-xl bg-linear-to-r from-blue-50 to-purple-50 p-4 border border-gray-200">
                     <div className="flex items-center justify-between mb-4">
                       <div className="font-bold text-gray-900">
                         Timeline de Produção
@@ -657,7 +653,7 @@ export default function LandingPage() {
                       </div>
                     </div>
                     <div className="h-2 bg-gray-200 rounded-full overflow-hidden mb-2">
-                      <div className="h-full bg-gradient-to-r from-blue-500 to-purple-500 w-3/4" />
+                      <div className="h-full bg-linear-to-r from-blue-500 to-purple-500 w-3/4" />
                     </div>
                     <div className="flex justify-between text-xs text-gray-600">
                       <span>Seg</span>
@@ -680,7 +676,7 @@ export default function LandingPage() {
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold mb-4 text-gray-900">
               O que dizem nossos
-              <span className="block bg-gradient-to-r from-blue-600 to-red-600 bg-clip-text text-transparent">
+              <span className="block bg-linear-to-r from-blue-600 to-red-600 bg-clip-text text-transparent">
                 criadores
               </span>
             </h2>
@@ -735,13 +731,13 @@ export default function LandingPage() {
       <section id="pricing" className="py-20 bg-white">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
-            <Badge className="mb-4 bg-gradient-to-r from-blue-500/10 to-purple-500/10 text-blue-700 border-blue-200">
+            <Badge className="mb-4 bg-linear-to-r from-blue-500/10 to-purple-500/10 text-blue-700 border-blue-200">
               <DollarSign className="h-3 w-3 mr-1" />
               PREÇOS TRANSPARENTES
             </Badge>
             <h2 className="text-4xl font-bold mb-4 text-gray-900">
               Escolha o plano ideal
-              <span className="block bg-gradient-to-r from-purple-600 to-red-600 bg-clip-text text-transparent">
+              <span className="block bg-linear-to-r from-purple-600 to-red-600 bg-clip-text text-transparent">
                 para o seu crescimento
               </span>
             </h2>
@@ -752,27 +748,34 @@ export default function LandingPage() {
 
           {/* Toggle de Faturamento */}
           <div className="flex justify-center mb-12">
-            <div className="bg-gray-100 rounded-full p-1 inline-flex">
+            {/* Wrapper com fundo branco - já está adequado */}
+            <div className="bg-white rounded-full p-1 inline-flex shadow-sm border border-slate-200">
               <Tabs
                 defaultValue="monthly"
                 className="w-full"
                 value={activePricingTab}
                 onValueChange={setActivePricingTab}
               >
-                <TabsList className="grid w-full max-w-md grid-cols-2 bg-transparent p-1">
+                {/* Aumentei o contraste do fundo das abas */}
+                <TabsList className="grid w-full max-w-md grid-cols-2 bg-slate-100 p-1 rounded-full">
                   <TabsTrigger
                     value="monthly"
-                    className="data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-full px-8 py-3"
+                    className="flex items-center justify-center cursor-pointer text-center leading-none rounded-full transition-all duration-200 text-slate-800 hover:text-slate-900 hover:bg-slate-200 data-[state=active]:bg-slate-950 data-[state=active]:text-white data-[state=active]:shadow-sm"
                   >
-                    <span className="font-semibold">Faturamento Mensal</span>
+                    <span className="font-semibold text-sm text-slate-900">
+                      Faturamento Mensal
+                    </span>
                   </TabsTrigger>
+
                   <TabsTrigger
                     value="yearly"
-                    className="data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-full px-8 py-3"
+                    className="flex items-center justify-center cursor-pointer text-center leading-none rounded-full transition-all duration-200 text-slate-800 hover:text-slate-900 hover:bg-slate-200 data-[state=active]:bg-slate-950 data-[state=active]:text-white data-[state=active]:shadow-sm"
                   >
-                    <div className="flex items-center">
-                      <span className="font-semibold">Faturamento Anual</span>
-                      <Badge className="ml-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700">
+                    <div className="flex items-center justify-center gap-2">
+                      <span className="font-semibold text-sm text-slate-900">
+                        Faturamento Anual
+                      </span>
+                      <Badge className="bg-linear-to-r from-green-600 to-emerald-600 text-white rounded-full px-2 py-0.5 text-[11px] font-medium">
                         -20%
                       </Badge>
                     </div>
@@ -789,7 +792,7 @@ export default function LandingPage() {
               animate={{ opacity: 1, y: 0 }}
               className="max-w-3xl mx-auto mb-12"
             >
-              <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200">
+              <Card className="bg-linear-to-r from-green-50 to-emerald-50 border border-green-200">
                 <CardContent className="p-6">
                   <div className="flex flex-col md:flex-row items-center justify-between">
                     <div className="flex items-center mb-4 md:mb-0">
@@ -831,7 +834,7 @@ export default function LandingPage() {
                 >
                   {plan.popular && (
                     <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-10">
-                      <Badge className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-2 shadow-lg">
+                      <Badge className="bg-linear-to-r from-blue-600 to-purple-600 text-white px-6 py-2 shadow-lg">
                         <Award className="h-3 w-3 mr-2" />
                         MAIS POPULAR
                       </Badge>
@@ -840,17 +843,17 @@ export default function LandingPage() {
 
                   <Card
                     className={cn(
-                      "h-full border-2 transition-all duration-300 hover:shadow-xl flex flex-col",
+                      "h-full border-2 transition-all duration-300 hover:shadow-xl flex flex-col bg-white",
                       plan.popular
                         ? "border-blue-500 shadow-lg relative overflow-hidden"
                         : "border-gray-200 hover:border-blue-300",
                     )}
                   >
                     {plan.popular && (
-                      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-600 to-purple-600" />
+                      <div className="absolute top-0 left-0 right-0 h-1 bg-linear-to-r from-blue-600 to-purple-600" />
                     )}
 
-                    <CardContent className="p-8 flex flex-col flex-grow">
+                    <CardContent className="p-8 flex flex-col grow">
                       {/* Cabeçalho do Plano */}
                       <div className="mb-8">
                         <div className="flex justify-between items-start mb-4">
@@ -918,29 +921,29 @@ export default function LandingPage() {
                           <Button
                             size="lg"
                             className={cn(
-                              "w-full mb-8 font-semibold",
+                              "w-full mb-8 font-semibold cursor-pointer",
                               plan.buttonVariant === "default"
-                                ? "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
+                                ? "bg-linear-to-r from-red-600 to-blue-600 hover:from-blue-700 hover:to-purple-700 text-white"
                                 : "border-2",
                             )}
                           >
-                            {plan.buttonText}
+                            <DialogTitle>{plan.buttonText}</DialogTitle>
                           </Button>
                         </DialogTrigger>
-                        <DialogContent className="sm:max-w-[425px] bg-white">
-                          <SignUpForm onSwitchToSignIn={() => {}} />
+                        <DialogContent className="sm:max-w-106.25">
+                          <SignUpForm />
                         </DialogContent>
                       </Dialog>
 
                       {/* Lista de Recursos */}
-                      <div className="flex-grow">
+                      <div className="grow">
                         <h4 className="font-semibold text-gray-900 mb-4">
                           Inclui:
                         </h4>
                         <ul className="space-y-3">
                           {plan.features.map((feature, idx) => (
                             <li key={idx} className="flex items-start">
-                              <CheckCircle className="h-5 w-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
+                              <CheckCircle className="h-5 w-5 text-green-500 mr-3 mt-0.5 shrink-0" />
                               <span className="text-gray-700">{feature}</span>
                             </li>
                           ))}
@@ -1065,7 +1068,7 @@ export default function LandingPage() {
               Perguntas Frequentes sobre Preços
             </h3>
             <div className="grid md:grid-cols-2 gap-6">
-              <Card className="border border-gray-200">
+              <Card className="border border-gray-200 bg-gray-50">
                 <CardContent className="p-6">
                   <div className="flex items-start mb-4">
                     <HelpCircle className="h-5 w-5 text-blue-600 mr-3 mt-0.5" />
@@ -1081,7 +1084,7 @@ export default function LandingPage() {
                   </div>
                 </CardContent>
               </Card>
-              <Card className="border border-gray-200">
+              <Card className="border border-gray-200 bg-gray-50">
                 <CardContent className="p-6">
                   <div className="flex items-start mb-4">
                     <HelpCircle className="h-5 w-5 text-blue-600 mr-3 mt-0.5" />
@@ -1097,7 +1100,7 @@ export default function LandingPage() {
                   </div>
                 </CardContent>
               </Card>
-              <Card className="border border-gray-200">
+              <Card className="border border-gray-200 bg-gray-50">
                 <CardContent className="p-6">
                   <div className="flex items-start mb-4">
                     <HelpCircle className="h-5 w-5 text-blue-600 mr-3 mt-0.5" />
@@ -1113,7 +1116,7 @@ export default function LandingPage() {
                   </div>
                 </CardContent>
               </Card>
-              <Card className="border border-gray-200">
+              <Card className="border border-gray-200 bg-gray-50">
                 <CardContent className="p-6">
                   <div className="flex items-start mb-4">
                     <HelpCircle className="h-5 w-5 text-blue-600 mr-3 mt-0.5" />
@@ -1135,7 +1138,7 @@ export default function LandingPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-r from-blue-600 via-purple-600 to-red-600 relative overflow-hidden">
+      <section className="py-20 bg-linear-to-r from-red-600 via-purple-600 to-blue-600 relative overflow-hidden">
         <div className="absolute inset-0 bg-black/10" />
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-4xl mx-auto text-center text-white">
@@ -1152,14 +1155,14 @@ export default function LandingPage() {
                 <DialogTrigger asChild>
                   <Button
                     size="lg"
-                    className="bg-white text-blue-600 hover:bg-gray-100 px-8 py-6 text-lg font-bold shadow-lg"
+                    className="cursor-pointer bg-white text-blue-600 hover:bg-gray-100 px-8 py-6 text-lg font-bold shadow-lg"
                   >
-                    Criar Conta Gratuita
+                    <DialogTitle>Criar Conta Gratuita</DialogTitle>
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-[425px] bg-white">
-                  <SignUpForm onSwitchToSignIn={() => {}} />
+                <DialogContent className="sm:max-w-106.25">
+                  <SignUpForm />
                 </DialogContent>
               </Dialog>
             </div>
