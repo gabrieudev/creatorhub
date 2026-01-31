@@ -22,7 +22,7 @@ export default function SignUpForm() {
       name: "",
     },
     onSubmit: async ({ value }) => {
-      await signUp(value);
+      await signUp(value as any);
     },
     validators: {
       onSubmit: z.object({
