@@ -21,7 +21,7 @@ export function InputWithIcon({
         value={value}
         onBlur={onBlur}
         onChange={onChange}
-        className="pl-10"
+        className="pl-10 border-slate-600 bg-slate-700 text-white placeholder-slate-400 focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-800 dark:text-slate-400 dark:placeholder-slate-500 dark:focus:border-blue-500 dark:focus:ring-blue-500"
         aria-describedby={`${id}-error`}
       />
     </div>

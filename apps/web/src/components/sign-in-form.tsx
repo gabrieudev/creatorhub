@@ -33,14 +33,14 @@ export default function SignInForm() {
   });
 
   return (
-    <Card className="max-w-md w-full p-6 sm:p-8">
+    <Card className="max-w-md w-full p-6 sm:p-8 bg-slate-800 border border-slate-800">
       <div className="flex items-center justify-center mb-6">
         <div className="h-12 w-12 rounded-lg bg-linear-to-r flex items-center justify-center">
           <Image src="/logo.png" width={72} height={72} alt="logo" />
         </div>
       </div>
 
-      <h1 className="mb-2 text-center text-2xl font-extrabold">
+      <h1 className="mb-2 text-center text-2xl font-extrabold text-white">
         Bem-vindo de volta
       </h1>
       <p className="mb-6 text-center text-sm text-slate-300">
@@ -102,7 +102,7 @@ export default function SignInForm() {
                     value={field.state.value}
                     onBlur={field.handleBlur}
                     onChange={(e: any) => field.handleChange(e.target.value)}
-                    className="pl-10"
+                    className="pl-10 bg-slate-700 text-white placeholder-slate-400 focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-800 dark:text-slate-400 dark:placeholder-slate-500 dark:focus:border-blue-500 dark:focus:ring-blue-500 border-slate-600"
                     aria-describedby={`${field.name}-error`}
                   />
 
@@ -139,7 +139,8 @@ export default function SignInForm() {
           {(state) => (
             <Button
               type="submit"
-              className="w-full mt-2"
+              variant="default"
+              className="w-full mt-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={!state.canSubmit || state.isSubmitting}
               aria-disabled={!state.canSubmit || state.isSubmitting}
             >

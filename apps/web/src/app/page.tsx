@@ -235,7 +235,7 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-linear-to-b from-gray-50 via-white to-gray-50">
-      {/* Header/Navigation */}
+      {/* Header */}
       <header
         className={cn(
           "sticky top-0 z-50 w-full transition-all duration-300 border-b",
@@ -253,7 +253,6 @@ export default function LandingPage() {
               </span>
             </div>
 
-            {/* Desktop Navigation */}
             <NavigationMenu className="hidden lg:flex">
               <NavigationMenuList>
                 <NavigationMenuItem>
@@ -370,7 +369,6 @@ export default function LandingPage() {
               </NavigationMenuList>
             </NavigationMenu>
 
-            {/* Auth Buttons */}
             <div className="flex items-center space-x-3">
               <Dialog>
                 <DialogTrigger asChild>
@@ -396,7 +394,7 @@ export default function LandingPage() {
                     </DialogTitle>
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-106.25">
+                <DialogContent className="sm:max-w-106.25 bg-slate-900">
                   <SignUpForm />
                 </DialogContent>
               </Dialog>
@@ -405,7 +403,7 @@ export default function LandingPage() {
         </div>
       </header>
 
-      {/* Hero Section */}
+      {/* Seção Hero */}
       <section className="relative overflow-hidden pt-20 pb-32 bg-linear-to-b from-white to-gray-50">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl" />
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-red-500/5 rounded-full blur-3xl" />
@@ -444,7 +442,6 @@ export default function LandingPage() {
               </Dialog>
             </div>
 
-            {/* Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-2xl mx-auto bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-sm border border-gray-100">
               <div className="text-center">
                 <div className="text-3xl font-bold bg-linear-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent">
@@ -475,7 +472,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Features Section */}
+      {/* Seção de Funcionalidades */}
       <section className="py-20 bg-white">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
@@ -550,7 +547,7 @@ export default function LandingPage() {
             ))}
           </div>
 
-          {/* Feature Showcase */}
+          {/* Showcase de Funcionalidades */}
           <div className="bg-linear-to-br from-blue-50 to-purple-50 rounded-2xl p-8 md:p-12 border border-blue-100">
             <div className="grid md:grid-cols-2 gap-12 items-center">
               <div>
@@ -670,7 +667,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Testimonials Section */}
+      {/* Seção de Depoimentos */}
       <section id="testimonials" className="py-20 bg-gray-50">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
@@ -727,7 +724,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Pricing Section */}
+      {/* Seção de Preços */}
       <section id="pricing" className="py-20 bg-white">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
@@ -748,7 +745,6 @@ export default function LandingPage() {
 
           {/* Toggle de Faturamento */}
           <div className="flex justify-center mb-12">
-            {/* Wrapper com fundo branco - já está adequado */}
             <div className="bg-white rounded-full p-1 inline-flex shadow-sm border border-slate-200">
               <Tabs
                 defaultValue="monthly"
@@ -756,11 +752,10 @@ export default function LandingPage() {
                 value={activePricingTab}
                 onValueChange={setActivePricingTab}
               >
-                {/* Aumentei o contraste do fundo das abas */}
                 <TabsList className="grid w-full max-w-md grid-cols-2 bg-slate-100 p-1 rounded-full">
                   <TabsTrigger
                     value="monthly"
-                    className="flex items-center justify-center cursor-pointer text-center leading-none rounded-full transition-all duration-200 text-slate-800 hover:text-slate-900 hover:bg-slate-200 data-[state=active]:bg-slate-950 data-[state=active]:text-white data-[state=active]:shadow-sm"
+                    className="flex items-center justify-center cursor-pointer text-center leading-none rounded-full transition-all duration-200 text-slate-800 hover:text-slate-900 hover:bg-slate-200 data-[state=active]:text-white data-[state=active]:shadow-sm"
                   >
                     <span className="font-semibold text-sm text-slate-900">
                       Faturamento Mensal
@@ -769,7 +764,7 @@ export default function LandingPage() {
 
                   <TabsTrigger
                     value="yearly"
-                    className="flex items-center justify-center cursor-pointer text-center leading-none rounded-full transition-all duration-200 text-slate-800 hover:text-slate-900 hover:bg-slate-200 data-[state=active]:bg-slate-950 data-[state=active]:text-white data-[state=active]:shadow-sm"
+                    className="flex items-center justify-center cursor-pointer text-center leading-none rounded-full transition-all duration-200 text-slate-800 hover:text-slate-900 hover:bg-slate-200 data-[state=active]:text-white data-[state=active]:shadow-sm"
                   >
                     <div className="flex items-center justify-center gap-2">
                       <span className="font-semibold text-sm text-slate-900">
@@ -930,7 +925,7 @@ export default function LandingPage() {
                             <DialogTitle>{plan.buttonText}</DialogTitle>
                           </Button>
                         </DialogTrigger>
-                        <DialogContent className="sm:max-w-106.25">
+                        <DialogContent className="sm:max-w-106.25 bg-slate-900">
                           <SignUpForm />
                         </DialogContent>
                       </Dialog>
@@ -1161,7 +1156,7 @@ export default function LandingPage() {
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-106.25">
+                <DialogContent className="sm:max-w-106.25 bg-slate-900">
                   <SignUpForm />
                 </DialogContent>
               </Dialog>
