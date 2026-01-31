@@ -1,11 +1,22 @@
+"use client";
+
 import { useForm } from "@tanstack/react-form";
 import z from "zod";
 
 import { useSession } from "@/providers/auth-provider";
-import { Eye, EyeOff, Loader2, Lock, Mail, User } from "lucide-react";
+import {
+  Eye,
+  EyeOff,
+  Loader2,
+  Lock,
+  Mail,
+  User,
+  Github,
+  Chrome,
+  Facebook,
+} from "lucide-react";
 import { useState } from "react";
 import { FieldWrapper } from "./FieldWrapper";
-import { InputWithIcon } from "./InputWithIcon";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { Input } from "./ui/input";
@@ -14,6 +25,27 @@ import Image from "next/image";
 export default function SignUpForm() {
   const { signUp } = useSession();
   const [showPassword, setShowPassword] = useState(false);
+
+  const socialProviders = [
+    {
+      name: "Google",
+      icon: <Chrome className="h-5 w-5" />,
+      color:
+        "hover:bg-red-50 dark:hover:bg-red-900/20 border-red-200 dark:border-red-800 text-red-600 dark:text-red-400",
+    },
+    {
+      name: "GitHub",
+      icon: <Github className="h-5 w-5" />,
+      color:
+        "hover:bg-gray-50 dark:hover:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300",
+    },
+    {
+      name: "Facebook",
+      icon: <Facebook className="h-5 w-5" />,
+      color:
+        "hover:bg-blue-50 dark:hover:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400",
+    },
+  ];
 
   const form = useForm({
     defaultValues: {
@@ -34,19 +66,48 @@ export default function SignUpForm() {
   });
 
   return (
-    <Card className="max-w-md w-full p-6 sm:p-8 bg-slate-800 border border-slate-800">
+    <Card className="max-w-md w-full p-6 sm:p-8 bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 shadow-lg">
       <div className="flex items-center justify-center mb-6">
-        <div className="h-12 w-12 rounded-lg bg-linear-to-r flex items-center justify-center">
+        <div className="h-12 w-12 rounded-lg flex items-center justify-center">
           <Image src="/logo.png" alt="logo" width={72} height={72} />
         </div>
       </div>
 
-      <h1 className="mb-2 text-center text-2xl font-extrabold text-white">
+      <h1 className="mb-2 text-center text-2xl font-extrabold text-gray-900 dark:text-white">
         Criar conta
       </h1>
-      <p className="mb-6 text-center text-sm text-slate-300">
+      <p className="mb-6 text-center text-sm text-gray-600 dark:text-slate-300">
         Preencha seus dados para criar uma nova conta
       </p>
+
+      {/* Seção de Login Social */}
+      <div className="space-y-3 mb-6">
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-300 dark:border-slate-600"></div>
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="px-2 bg-white dark:bg-slate-900 text-gray-500 dark:text-slate-400">
+              Ou continue com
+            </span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-3 gap-3">
+          {socialProviders.map((provider) => (
+            <Button
+              key={provider.name}
+              type="button"
+              variant="outline"
+              className={`${provider.color} border h-10 transition-all duration-200`}
+              onClick={() => console.log(`${provider.name} sign up clicked`)}
+            >
+              {provider.icon}
+              <span className="sr-only">Cadastrar com {provider.name}</span>
+            </Button>
+          ))}
+        </div>
+      </div>
 
       <form
         onSubmit={(e) => {
@@ -54,28 +115,34 @@ export default function SignUpForm() {
           e.stopPropagation();
           form.handleSubmit();
         }}
-        className="space-y-4"
+        className="space-y-5"
         noValidate
       >
         <div>
           <form.Field name="name">
             {(field) => (
               <FieldWrapper label="Nome">
-                <InputWithIcon
-                  id={field.name}
-                  name={field.name}
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onChange={(e: any) => field.handleChange(e.target.value)}
-                  icon={<User size={16} />}
-                />
+                <div className="relative">
+                  <div className="pointer-events-none absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400 dark:text-slate-400">
+                    <User size={16} />
+                  </div>
+                  <Input
+                    id={field.name}
+                    name={field.name}
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(e: any) => field.handleChange(e.target.value)}
+                    className="pl-10 bg-gray-50 dark:bg-slate-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-slate-400 border-gray-300 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-500/20"
+                    aria-describedby={`${field.name}-error`}
+                  />
+                </div>
 
                 <div aria-live="polite">
                   {field.state.meta.errors.map((error) => (
                     <p
                       key={error?.message}
                       id={`${field.name}-error`}
-                      className="text-sm text-red-400 mt-1"
+                      className="text-sm text-red-500 dark:text-red-400 mt-1"
                     >
                       {error?.message}
                     </p>
@@ -90,22 +157,28 @@ export default function SignUpForm() {
           <form.Field name="email">
             {(field) => (
               <FieldWrapper label="Email">
-                <InputWithIcon
-                  id={field.name}
-                  name={field.name}
-                  type="email"
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onChange={(e: any) => field.handleChange(e.target.value)}
-                  icon={<Mail size={16} />}
-                />
+                <div className="relative">
+                  <div className="pointer-events-none absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400 dark:text-slate-400">
+                    <Mail size={16} />
+                  </div>
+                  <Input
+                    id={field.name}
+                    name={field.name}
+                    type="email"
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(e: any) => field.handleChange(e.target.value)}
+                    className="pl-10 bg-gray-50 dark:bg-slate-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-slate-400 border-gray-300 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-500/20"
+                    aria-describedby={`${field.name}-error`}
+                  />
+                </div>
 
                 <div aria-live="polite">
                   {field.state.meta.errors.map((error) => (
                     <p
                       key={error?.message}
                       id={`${field.name}-error`}
-                      className="text-sm text-red-400 mt-1"
+                      className="text-sm text-red-500 dark:text-red-400 mt-1"
                     >
                       {error?.message}
                     </p>
@@ -121,7 +194,7 @@ export default function SignUpForm() {
             {(field) => (
               <FieldWrapper label="Senha">
                 <div className="relative">
-                  <div className="pointer-events-none absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+                  <div className="pointer-events-none absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400 dark:text-slate-400">
                     <Lock size={16} />
                   </div>
 
@@ -132,14 +205,14 @@ export default function SignUpForm() {
                     value={field.state.value}
                     onBlur={field.handleBlur}
                     onChange={(e: any) => field.handleChange(e.target.value)}
-                    className="pl-10 pr-10 border-slate-600 bg-slate-700 text-white placeholder-slate-400 focus:border-blue-500 focus:ring-blue-500 dark:bg-slate-800 dark:text-slate-400 dark:placeholder-slate-500 dark:focus:border-blue-500 dark:focus:ring-blue-500"
+                    className="pl-10 pr-10 bg-gray-50 dark:bg-slate-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-slate-400 border-gray-300 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-500/20"
                     aria-describedby={`${field.name}-error`}
                   />
 
                   <button
                     type="button"
                     onClick={() => setShowPassword((s) => !s)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400"
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 dark:text-slate-400 hover:text-gray-600 dark:hover:text-slate-300"
                     aria-label={
                       showPassword ? "Ocultar senha" : "Mostrar senha"
                     }
@@ -152,7 +225,7 @@ export default function SignUpForm() {
                       <p
                         key={error?.message}
                         id={`${field.name}-error`}
-                        className="text-sm text-red-400 mt-1"
+                        className="text-sm text-red-500 dark:text-red-400 mt-1"
                       >
                         {error?.message}
                       </p>
@@ -168,13 +241,13 @@ export default function SignUpForm() {
           {(state) => (
             <Button
               type="submit"
-              className="w-full mt-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full mt-2 bg-linear-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-3 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
               disabled={!state.canSubmit || state.isSubmitting}
               aria-disabled={!state.canSubmit || state.isSubmitting}
             >
               {state.isSubmitting ? (
                 <span className="inline-flex items-center gap-2">
-                  <Loader2 className="animate-spin h-6 w-6" /> Enviando...
+                  <Loader2 className="animate-spin h-5 w-5" /> Enviando...
                 </span>
               ) : (
                 "Criar conta"
