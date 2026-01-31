@@ -1,7 +1,7 @@
 import { useForm } from "@tanstack/react-form";
 import z from "zod";
 
-import { useSession } from "@/providers/session-provider";
+import { useSession } from "@/providers/auth-provider";
 import { Eye, EyeOff, Loader2, Lock, Mail, User } from "lucide-react";
 import { useState } from "react";
 import { FieldWrapper } from "./FieldWrapper";

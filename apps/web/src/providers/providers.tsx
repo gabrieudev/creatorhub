@@ -1,6 +1,6 @@
 "use client";
 
-import { SessionProvider } from "./session-provider";
+import { SessionProvider } from "./auth-provider";
 import { ThemeProvider } from "./theme-provider";
 import { Toaster } from "../components/ui/sonner";
 

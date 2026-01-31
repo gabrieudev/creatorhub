@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { useSession } from "@/providers/session-provider";
+import { useSession } from "@/providers/auth-provider";
 import { useForm } from "@tanstack/react-form";
 import { Eye, EyeOff, Loader2, Lock, Mail } from "lucide-react";
 import Image from "next/image";

@@ -12,7 +12,14 @@ import React, {
 } from "react";
 import { toast } from "sonner";
 
-type Session = Awaited<ReturnType<typeof authClient.getSession>>["data"];
+type InferSession<T> = T extends () => Promise<infer R>
+  ? R extends { data?: infer D }
+    ? D
+    : never
+  : never;
+
+type RawSession = InferSession<typeof authClient.getSession>;
+type Session = NonNullable<RawSession>;
 
 type SessionContextValue = {
   session: Session | null;
@@ -60,7 +67,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     try {
       await authClient.signOut();
       setSession(null);
-      router.push("/login");
+      router.push("/");
     } catch (error) {
       console.error("Erro ao fazer logout:", error);
     } finally {
@@ -68,7 +75,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const signUp = async (body: Prettify<Session["user"]>) => {
+  const signUp = async (body: any) => {
     setIsLoading(true);
     try {
       await authClient.signUp.email(body);

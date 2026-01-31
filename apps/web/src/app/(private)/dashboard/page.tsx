@@ -1,6 +1,6 @@
 "use client";
 
-import { useSession } from "@/providers/session-provider";
+import { useSession } from "@/providers/auth-provider";
 
 export default function DashboardPage() {
   const { session, isLoading } = useSession();
@@ -12,7 +12,7 @@ export default function DashboardPage() {
   return (
     <div>
       <h1>Dashboard</h1>
-      <p>Welcome, {session.user.name}!</p>
+      <p>Welcome, {session?.user.name}!</p>
     </div>
   );
 }
