@@ -1,67 +1,34 @@
-import { auth } from "@CreatorHub/auth";
-import { env } from "@CreatorHub/env/server";
-import fastifyCors from "@fastify/cors";
 import Fastify from "fastify";
+import authProxy from "./plugins/auth-proxy";
+import corsPlugin from "./plugins/cors";
+import { globalErrorHandler } from "./lib/global-error-handler";
+import organizationRoutes from "./modules/organizations/organization.routes";
 
-const PORT = Number(env.PORT) || 3000;
+const fastify = Fastify({ logger: true });
 
-const baseCorsConfig = {
-  origin: env.CORS_ORIGIN,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
-  credentials: true,
-  maxAge: 86400,
-};
+async function bootstrap() {
+  // plugins
+  await fastify.register(corsPlugin);
+  await fastify.register(authProxy);
 
-const fastify = Fastify({
-  logger: true,
+  // handler de erros global
+  fastify.setErrorHandler(globalErrorHandler);
+
+  // rotas
+  fastify.register(
+    async (fastify) => {
+      fastify.addHook("preHandler", fastify.authenticate);
+      fastify.register(organizationRoutes);
+    },
+    { prefix: "/api" },
+  );
+
+  const port = Number(process.env.PORT ?? 3000);
+  await fastify.listen({ port, host: "0.0.0.0" });
+  fastify.log.info(`Servidor rodando na porta ${port}`);
+}
+
+bootstrap().catch((err) => {
+  fastify.log.error(err);
+  process.exit(1);
 });
-
-fastify.register(fastifyCors, baseCorsConfig);
-
-fastify.route({
-  method: ["GET", "POST"],
-  url: "/api/auth/*",
-  async handler(request, reply) {
-    try {
-      const url = new URL(request.url, `http://${request.headers.host}`);
-      const headers = new Headers();
-      Object.entries(request.headers).forEach(([key, value]) => {
-        if (value) headers.append(key, value.toString());
-      });
-      const req = new Request(url.toString(), {
-        method: request.method,
-        headers,
-        body: request.body ? JSON.stringify(request.body) : undefined,
-      });
-      const response = await auth.handler(req);
-      reply.status(response.status);
-      response.headers.forEach((value, key) => reply.header(key, value));
-      reply.send(response.body ? await response.text() : null);
-    } catch (error) {
-      fastify.log.error({ err: error }, "Authentication Error:");
-      reply.status(500).send({
-        error: "Internal authentication error",
-        code: "AUTH_FAILURE",
-      });
-    }
-  },
-});
-
-fastify.get("/", async () => {
-  return "OK";
-});
-
-fastify.listen(
-  {
-    port: PORT,
-    host: "0.0.0.0",
-  },
-  (err) => {
-    if (err) {
-      fastify.log.error(err);
-      process.exit(1);
-    }
-    console.log(`🚀 Server running on 0.0.0.0:${PORT}`);
-  },
-);

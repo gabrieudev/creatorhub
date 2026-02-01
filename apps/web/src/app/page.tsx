@@ -62,7 +62,6 @@ export default function LandingPage() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [activeFeature, setActiveFeature] = useState(0);
   const [activePricingTab, setActivePricingTab] = useState("monthly");
-  const [activeAuthTab, setActiveAuthTab] = useState("signIn");
 
   useEffect(() => {
     const handleScroll = () => {

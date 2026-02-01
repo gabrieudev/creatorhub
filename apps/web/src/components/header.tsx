@@ -357,7 +357,7 @@ export default function Header() {
                   />
                 </motion.div>
                 <div className="flex flex-col">
-                  <span className="text-xl font-bold bg-linear-to-r from-primary via-purple-600 to-pink-600 bg-clip-text text-transparent bg-300% animate-gradient">
+                  <span className="text-xl font-bold bg-linear-to-r from-red-600 via-purple-600 to-blue-600 bg-clip-text text-transparent bg-300% animate-gradient">
                     CreatorHub
                   </span>
                   <span className="text-xs text-muted-foreground -mt-1">
