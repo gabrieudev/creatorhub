@@ -4,7 +4,7 @@ import { useSession } from "@/providers/auth-provider";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
-export function AuthGuard({ children }: { children: React.ReactNode }) {
+export function PrivateRoutes({ children }: { children: React.ReactNode }) {
   const { session, isLoading } = useSession();
   const router = useRouter();
 

@@ -1,16 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
-import SignInForm from "@/components/sign-in-form";
-import SignUpForm from "@/components/sign-up-form";
 import Image from "next/image";
+import { useEffect, useState } from "react";
 
 import {
   NavigationMenu,
@@ -31,20 +28,16 @@ import {
   Clock,
   Cloud,
   DollarSign,
-  Facebook,
   HelpCircle,
-  Instagram,
   LayoutDashboard,
-  Linkedin,
   Shield,
   Star,
   TrendingUp,
-  Twitter,
   Users,
   Workflow,
   X,
 } from "lucide-react";
-import { DialogTitle } from "@radix-ui/react-dialog";
+import { useRouter } from "next/navigation";
 
 export type Plan = {
   name: string;
@@ -59,6 +52,7 @@ export type Plan = {
 };
 
 export default function LandingPage() {
+  const router = useRouter();
   const [isScrolled, setIsScrolled] = useState(false);
   const [activeFeature, setActiveFeature] = useState(0);
   const [activePricingTab, setActivePricingTab] = useState("monthly");
@@ -369,34 +363,20 @@ export default function LandingPage() {
             </NavigationMenu>
 
             <div className="flex items-center space-x-3">
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button
-                    variant="default"
-                    className="text-black bg-white hover:bg-gray-100 shadow-md hover:shadow-lg cursor-pointer"
-                  >
-                    <DialogTitle className="text-black hover:text-blue-600">
-                      Entrar
-                    </DialogTitle>
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-106.25 bg-slate-900">
-                  <SignInForm />
-                </DialogContent>
-              </Dialog>
+              <Button
+                onClick={() => router.push("/signin")}
+                variant="default"
+                className="text-black bg-white hover:bg-gray-100 shadow-md hover:shadow-lg cursor-pointer"
+              >
+                Entrar
+              </Button>
 
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button className="bg-linear-to-r cursor-pointer from-red-600 to-blue-600 hover:from-blue-700 hover:to-red-700 shadow-md hover:shadow-lg">
-                    <DialogTitle className="text-white">
-                      Começar Grátis
-                    </DialogTitle>
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-106.25 bg-slate-900">
-                  <SignUpForm />
-                </DialogContent>
-              </Dialog>
+              <Button
+                onClick={() => router.push("/signup")}
+                className="bg-linear-to-r cursor-pointer text-white from-red-600 to-blue-600 hover:from-blue-700 hover:to-red-700 shadow-md hover:shadow-lg"
+              >
+                Começar Grátis
+              </Button>
             </div>
           </div>
         </div>
@@ -425,20 +405,14 @@ export default function LandingPage() {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16">
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button
-                    size="lg"
-                    className="bg-linear-to-r from-red-600 to-blue-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-6 text-lg shadow-lg hover:shadow-xl"
-                  >
-                    <DialogTitle>Começar Gratuitamente</DialogTitle>
-                    <ArrowRight className="ml-2 h-5 w-5" />
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-106.25">
-                  <SignUpForm />
-                </DialogContent>
-              </Dialog>
+              <Button
+                onClick={() => router.push("/signup")}
+                size="lg"
+                className="bg-linear-to-r from-red-600 to-blue-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-6 text-lg shadow-lg hover:shadow-xl"
+              >
+                Começar Gratuitamente
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-2xl mx-auto bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-sm border border-gray-100">
@@ -910,24 +884,18 @@ export default function LandingPage() {
                       </div>
 
                       {/* Botão de Ação */}
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button
-                            size="lg"
-                            className={cn(
-                              "w-full mb-8 font-semibold cursor-pointer",
-                              plan.buttonVariant === "default"
-                                ? "bg-linear-to-r from-red-600 to-blue-600 hover:from-blue-700 hover:to-purple-700 text-white"
-                                : "border-2",
-                            )}
-                          >
-                            <DialogTitle>{plan.buttonText}</DialogTitle>
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="sm:max-w-106.25 bg-slate-900">
-                          <SignUpForm />
-                        </DialogContent>
-                      </Dialog>
+                      <Button
+                        onClick={() => router.push("/signup")}
+                        size="lg"
+                        className={cn(
+                          "w-full mb-8 font-semibold cursor-pointer",
+                          plan.buttonVariant === "default"
+                            ? "bg-linear-to-r from-red-600 to-blue-600 hover:from-blue-700 hover:to-purple-700 text-white"
+                            : "border-2",
+                        )}
+                      >
+                        {plan.buttonText}
+                      </Button>
 
                       {/* Lista de Recursos */}
                       <div className="grow">
@@ -1145,20 +1113,14 @@ export default function LandingPage() {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16">
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button
-                    size="lg"
-                    className="cursor-pointer bg-white text-blue-600 hover:bg-gray-100 px-8 py-6 text-lg font-bold shadow-lg"
-                  >
-                    <DialogTitle>Criar Conta Gratuita</DialogTitle>
-                    <ArrowRight className="ml-2 h-5 w-5" />
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-106.25 bg-slate-900">
-                  <SignUpForm />
-                </DialogContent>
-              </Dialog>
+              <Button
+                onClick={() => router.push("/signup")}
+                size="lg"
+                className="cursor-pointer bg-white text-blue-600 hover:bg-gray-100 px-8 py-6 text-lg font-bold shadow-lg"
+              >
+                Criar Conta Gratuita
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mt-12">

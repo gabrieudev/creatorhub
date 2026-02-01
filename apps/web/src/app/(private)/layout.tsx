@@ -1,7 +1,8 @@
 "use client";
 
-import { AuthGuard } from "@/components/auth-guard";
+import { PrivateRoutes } from "@/providers/private-routes";
 import Header from "@/components/header";
+import { Footer } from "@/components/footer";
 
 export default function PrivateLayout({
   children,
@@ -9,11 +10,12 @@ export default function PrivateLayout({
   children: React.ReactNode;
 }) {
   return (
-    <AuthGuard>
+    <PrivateRoutes>
       <div className="grid grid-rows-[auto_1fr]">
         <Header />
         {children}
+        <Footer />
       </div>
-    </AuthGuard>
+    </PrivateRoutes>
   );
 }
