@@ -9,7 +9,7 @@ export function FieldWrapper({
 }) {
   return (
     <div className="space-y-2">
-      <Label className="text-sm font-medium text-slate-200">{label}</Label>
+      <Label className="text-sm font-medium">{label}</Label>
       {children}
     </div>
   );

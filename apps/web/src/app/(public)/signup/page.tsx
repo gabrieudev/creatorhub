@@ -43,6 +43,9 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { useRouter } from "next/navigation";
 import { generateSlug } from "@/lib/utils";
+import { toast } from "sonner";
+import api from "@/lib/api";
+import { authClient } from "@/lib/auth-client";
 
 // Tipos de organização
 type OrganizationType = "creator" | "team" | "agency";
@@ -121,7 +124,7 @@ const orgTypeConfigs = {
 
 export default function SignUpPage() {
   const router = useRouter();
-  const { signUp } = useSession();
+  const { signUp, refresh, session } = useSession();
   const [showPassword, setShowPassword] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [orgType, setOrgType] = useState<OrganizationType>("creator");
@@ -225,15 +228,29 @@ export default function SignUpPage() {
         organization: {
           name: value.orgName,
           slug: value.orgSlug,
-          type: orgType,
           timezone: value.timezone,
           currency: value.currency,
-          white_label: orgTypeConfigs[orgType].settings.white_label,
+          locale: value.currency === "BRL" ? "pt-BR" : "en-US",
+          whiteLabel: orgTypeConfigs[orgType].settings.white_label,
           branding: isWhiteLabel ? {} : undefined,
+          billingInfo: {},
+          settings: {},
         },
       };
 
-      await signUp(allData as any);
+      // Criar usuário e organização
+      try {
+        await signUp(allData as any);
+        const { data } = await authClient.getSession();
+        const userId = data?.user?.id;
+        if (!userId) throw new Error("Usuário não autenticado após cadastro");
+
+        await api.post(`/users/${userId}/organizations`, {
+          ...allData.organization,
+        });
+      } catch (err: any) {
+        toast.error(err.message ?? "Erro");
+      }
     },
     validators: {
       onChange: step2Schema,
