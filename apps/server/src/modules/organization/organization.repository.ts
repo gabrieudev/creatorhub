@@ -86,8 +86,4 @@ export const OrganizationRepository = {
 
     return row ?? null;
   },
-
-  async delete(id: string) {
-    await db.delete(organizationsInApp).where(eq(organizationsInApp.id, id));
-  },
 };

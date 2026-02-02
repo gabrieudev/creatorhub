@@ -2,7 +2,11 @@ import Fastify from "fastify";
 import authProxy from "./plugins/auth-proxy";
 import corsPlugin from "./plugins/cors";
 import { globalErrorHandler } from "./lib/global-error-handler";
-import organizationRoutes from "./modules/organizations/organization.routes";
+import organizationRoutes from "./modules/organization/organization.routes";
+import organizationMemberRoutes from "./modules/organization-member/organization-member.routes";
+import rolePermissionRoutes from "./modules/role-permission/role-permission.routes";
+import roleRoutes from "./modules/role/role.routes";
+import onboardingRoutes from "./modules/onboarding/onboarding.routes";
 
 const fastify = Fastify({ logger: true });
 
@@ -19,6 +23,10 @@ async function bootstrap() {
     async (fastify) => {
       fastify.addHook("preHandler", fastify.authenticate);
       fastify.register(organizationRoutes);
+      fastify.register(organizationMemberRoutes);
+      fastify.register(rolePermissionRoutes);
+      fastify.register(roleRoutes);
+      fastify.register(onboardingRoutes);
     },
     { prefix: "/api" },
   );

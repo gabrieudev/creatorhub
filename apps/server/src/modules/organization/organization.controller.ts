@@ -57,11 +57,4 @@ export default async function organizationController(
     const updated = await OrganizationService.update(params.id, payload);
     return reply.send(organizationResponseSchema.parse(updated));
   });
-
-  fastify.delete("/organizations/:id", async (request, reply) => {
-    guard(request);
-    const params = idParam.parse(request.params);
-    await OrganizationService.remove(params.id);
-    return reply.code(204).send();
-  });
 }

@@ -22,7 +22,7 @@ export const OrganizationService = {
       data = createOrganizationSchema.parse(input);
     } catch (err) {
       if (err instanceof ZodError) throw err;
-      throw new BadRequestError("Invalid payload");
+      throw new BadRequestError("Dados inválidos");
     }
 
     const baseSlug =
@@ -42,7 +42,7 @@ export const OrganizationService = {
         if (isUniqueViolation(err)) {
           if (attempt + 1 >= MAX_SLUG_ATTEMPTS) {
             throw new ConflictError(
-              "Could not generate unique slug after multiple attempts",
+              "Não foi possível gerar um slug único após várias tentativas",
               {
                 baseSlug,
                 attempts: MAX_SLUG_ATTEMPTS,
@@ -55,7 +55,7 @@ export const OrganizationService = {
       }
     }
 
-    throw new ConflictError("Could not generate unique slug");
+    throw new ConflictError("Não foi possível gerar um slug único");
   },
 
   async getById(id: string) {
@@ -76,26 +76,26 @@ export const OrganizationService = {
       data = updateOrganizationSchema.parse(input);
     } catch (err) {
       if (err instanceof ZodError) throw err;
-      throw new BadRequestError("Invalid payload");
+      throw new BadRequestError("Dados inválidos");
     }
 
     const existing = await OrganizationRepository.findById(id);
-    if (!existing) throw new NotFoundError("Organization not found");
+    if (!existing) throw new NotFoundError("Organização não encontrada");
 
     if ((input as any)?.id && (input as any).id !== id) {
-      throw new BadRequestError("Cannot change immutable field 'id'");
+      throw new BadRequestError("Não é possível alterar o campo imutável 'id'");
     }
     if (
       (input as any)?.createdAt &&
       (input as any).createdAt !== existing.createdAt
     ) {
-      throw new BadRequestError("Cannot change immutable field 'createdAt'");
+      throw new BadRequestError("Não é possível alterar o campo imutável 'createdAt'");
     }
 
     // Se slug não está sendo alterado, faz update simples
     if (!data.slug) {
       const updated = await OrganizationRepository.update(id, data);
-      if (!updated) throw new NotFoundError("Organization not found");
+      if (!updated) throw new NotFoundError("Organização não encontrada");
       return updated;
     }
 
@@ -111,13 +111,13 @@ export const OrganizationService = {
           ...data,
           slug: candidate,
         });
-        if (!updated) throw new NotFoundError("Organization not found");
+        if (!updated) throw new NotFoundError("Organização não encontrada");
         return updated;
       } catch (err: any) {
         if (isUniqueViolation(err)) {
           if (attempt + 1 >= MAX_SLUG_ATTEMPTS) {
             throw new ConflictError(
-              "Could not generate unique slug after multiple attempts",
+              "Não foi possível gerar um slug único após várias tentativas",
               {
                 baseSlug,
                 attempts: MAX_SLUG_ATTEMPTS,
@@ -130,16 +130,6 @@ export const OrganizationService = {
       }
     }
 
-    throw new ConflictError("Could not generate unique slug");
-  },
-
-  async remove(id: string) {
-    const existing = await OrganizationRepository.findById(id);
-    if (!existing) throw new NotFoundError("Organization not found");
-
-    // TODO: checar dependências (ex.: projetos, invoices) antes de apagar
-
-    await OrganizationRepository.delete(id);
-    return;
+    throw new ConflictError("Não foi possível gerar um slug único");
   },
 };
