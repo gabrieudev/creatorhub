@@ -1,5 +1,16 @@
 "use client";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,245 +34,72 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { useSession } from "@/providers/auth-provider";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  BadgeCheck,
-  BarChart,
   Bell,
   Building,
-  Calendar,
+  Check,
   ChevronDown,
   ChevronRight,
   CreditCard,
   Crown,
-  DollarSign,
-  FileText,
+  Globe,
   HelpCircle,
   LifeBuoy,
   LogOut,
   Menu,
-  MessageSquare,
   Moon,
-  Package,
-  Puzzle,
+  Plus,
   Search,
   Settings,
   Shield,
   Smartphone,
   Sparkles,
   Sun,
-  TrendingUp,
   User,
   Users,
   X,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "./ui/alert-dialog";
-import type { Route } from "next";
-
-interface NavigationItem {
-  title: string;
-  href: Route;
-  icon: React.ComponentType<any>;
-  color?: string;
-  gradient?: string;
-  description?: string;
-  subItems?: NavigationItem[];
-  badge?: string;
-  badgeColor?: string;
-}
-
-const navigationItems: readonly NavigationItem[] = [
-  {
-    title: "Dashboard",
-    href: "/dashboard",
-    icon: BarChart,
-    description: "Visão geral do seu conteúdo e finanças",
-    color: "text-blue-500",
-    gradient: "from-blue-500 to-cyan-500",
-  },
-  {
-    title: "Conteúdo",
-    href: "/content",
-    icon: Calendar,
-    color: "text-emerald-500",
-    gradient: "from-emerald-500 to-green-500",
-    subItems: [
-      {
-        title: "Calendário Editorial",
-        href: "/content/calendar" as Route,
-        icon: Calendar,
-      },
-      {
-        title: "Gestão de Conteúdos",
-        href: "/content/list" as Route,
-        icon: FileText,
-      },
-      {
-        title: "Templates",
-        href: "/content/templates" as Route,
-        icon: Package,
-      },
-      {
-        title: "Roteiros & Assets",
-        href: "/content/scripts" as Route,
-        icon: FileText,
-      },
-    ],
-  },
-  {
-    title: "Financeiro",
-    href: "/financial" as Route,
-    icon: DollarSign,
-    color: "text-amber-500",
-    gradient: "from-amber-500 to-orange-500",
-    subItems: [
-      {
-        title: "Dashboard Financeiro",
-        href: "/financial/dashboard" as Route,
-        icon: TrendingUp,
-      },
-      {
-        title: "Registro de Receitas",
-        href: "/financial/income" as Route,
-        icon: DollarSign,
-      },
-      {
-        title: "Previsão de Ganhos",
-        href: "/financial/forecast" as Route,
-        icon: TrendingUp,
-      },
-      {
-        title: "Relatórios",
-        href: "/financial/reports" as Route,
-        icon: BarChart,
-      },
-    ],
-  },
-  {
-    title: "Split",
-    href: "/split" as Route,
-    icon: CreditCard,
-    color: "text-violet-500",
-    gradient: "from-violet-500 to-purple-500",
-    badge: "Beta",
-    badgeColor: "bg-gradient-to-r from-violet-600 to-purple-600",
-  },
-  {
-    title: "CRM",
-    href: "/crm" as Route,
-    icon: Users,
-    color: "text-pink-500",
-    gradient: "from-pink-500 to-rose-500",
-    subItems: [
-      { title: "Contatos", href: "/crm/contacts" as Route, icon: Users },
-      { title: "Propostas", href: "/crm/proposals" as Route, icon: FileText },
-      { title: "Contratos", href: "/crm/contracts" as Route, icon: BadgeCheck },
-    ],
-  },
-  {
-    title: "Integrações",
-    href: "/integrations" as Route,
-    icon: Puzzle,
-    color: "text-indigo-500",
-    gradient: "from-indigo-500 to-blue-500",
-    badge: "12+",
-    badgeColor: "bg-gradient-to-r from-indigo-600 to-blue-600",
-  },
-];
-
-const quickActions = [
-  { label: "Novo Conteúdo", shortcut: "⌘K", icon: Sparkles },
-  { label: "Registrar Receita", shortcut: "⌘R", icon: DollarSign },
-  { label: "Criar Invoice", shortcut: "⌘I", icon: FileText },
-  { label: "Convidar Membro", shortcut: "⌘M", icon: Users },
-];
+import useHeader from "./useHeader";
 
 export default function Header() {
-  const pathname = usePathname();
-  const { session, signOut } = useSession();
-  const [scrolled, setScrolled] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
-  const [notifications, setNotifications] = useState(5);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [quickActionOpen, setQuickActionOpen] = useState(false);
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [activeHover, setActiveHover] = useState<string | null>(null);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 10);
-    };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  const toggleDarkMode = () => {
-    setDarkMode(!darkMode);
-    if (!darkMode) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  };
-
-  const notificationItems = [
-    {
-      id: 1,
-      title: "Novo comentário no roteiro",
-      description: '"Vídeo sobre IA" recebeu feedback',
-      time: "2 minutos atrás",
-      unread: true,
-      icon: MessageSquare,
-      color: "bg-blue-500",
-    },
-    {
-      id: 2,
-      title: "Pagamento recebido",
-      description: "R$ 2.450 via Stripe - Ads YouTube",
-      time: "1 hora atrás",
-      unread: true,
-      icon: DollarSign,
-      color: "bg-emerald-500",
-    },
-    {
-      id: 3,
-      title: "Tarefa atribuída",
-      description: "Revisar edição do vlog semanal",
-      time: "3 horas atrás",
-      unread: false,
-      icon: Calendar,
-      color: "bg-amber-500",
-    },
-    {
-      id: 4,
-      title: "Integração atualizada",
-      description: "YouTube Analytics sync concluído",
-      time: "1 dia atrás",
-      unread: false,
-      icon: Puzzle,
-      color: "bg-indigo-500",
-    },
-  ];
+  const {
+    pathname,
+    scrolled,
+    darkMode,
+    notifications,
+    mobileMenuOpen,
+    searchOpen,
+    quickActionOpen,
+    userMenuOpen,
+    activeHover,
+    organizationSearchTerm,
+    filteredOrganizations,
+    hasMoreOrganizations,
+    session,
+    navigationItems,
+    quickActions,
+    notificationItems,
+    setSearchOpen,
+    setMobileMenuOpen,
+    setQuickActionOpen,
+    setUserMenuOpen,
+    setActiveHover,
+    setOrganizationSearchTerm,
+    setOrganizationsLimit,
+    toggleDarkMode,
+    signOut,
+    switchOrganization,
+    currentOrganization,
+    organizations,
+    loadMoreOrganizations,
+  } = useHeader();
 
   return (
     <>
-      {/* Animação de Pesquisa */}
+      {/* Overlay de Busca */}
       <AnimatePresence>
         {searchOpen && (
           <motion.div
@@ -300,7 +138,7 @@ export default function Header() {
                   className="mt-8"
                 >
                   <div className="grid grid-cols-2 gap-4">
-                    {quickActions.map((action, index) => (
+                    {quickActions.map((action) => (
                       <div
                         key={action.label}
                         className="flex items-center gap-3 p-3 rounded-lg border hover:bg-accent cursor-pointer transition-all hover:scale-[1.02]"
@@ -324,7 +162,7 @@ export default function Header() {
         )}
       </AnimatePresence>
 
-      {/* Header principal */}
+      {/* Header Principal */}
       <motion.header
         initial={{ y: -100 }}
         animate={{ y: 0 }}
@@ -338,11 +176,8 @@ export default function Header() {
       >
         <div className="container mx-auto px-4">
           <div className="flex h-16 items-center justify-between">
-            {/* Logo */}
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              className="flex items-center gap-3 m-4 p-2"
-            >
+            {/* Logo e Organização */}
+            <div className="flex items-center gap-4">
               <Link href="/dashboard" className="flex items-center gap-3 group">
                 <motion.div
                   whileHover={{ rotate: 5 }}
@@ -357,23 +192,201 @@ export default function Header() {
                   />
                 </motion.div>
                 <div className="flex flex-col">
-                  <span className="text-xl font-bold bg-linear-to-r from-red-600 via-purple-600 to-blue-600 bg-clip-text text-transparent bg-300% animate-gradient">
+                  <span className="text-xl font-bold bg-linear-to-r from-red-600 via-purple-600 to-blue-600 bg-clip-text text-transparent bg-size-[300%_100%] animate-gradient">
                     CreatorHub
                   </span>
                   <span className="text-xs text-muted-foreground -mt-1">
-                    Plataforma para Criadores de Conteúdo
+                    Plataforma para Criadores
                   </span>
                 </div>
               </Link>
 
-              <Badge
-                variant="outline"
-                className="hidden lg:flex items-center gap-1 ml-2 border-primary/30 bg-primary/5"
-              >
-                <Crown className="h-3 w-3 text-primary" />
-                {session?.user?.profile?.plan || "Free"}
-              </Badge>
-            </motion.div>
+              <Separator
+                orientation="vertical"
+                className="h-6 hidden lg:block"
+              />
+
+              {/* Seletor de Organização */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className="hidden lg:flex items-center gap-2 px-3 hover:bg-accent/50 mr-4"
+                  >
+                    <Building className="h-4 w-4 text-primary" />
+                    <div className="flex flex-col items-start">
+                      <span className="font-medium text-sm truncate max-w-35">
+                        {currentOrganization?.name || "Selecionar Org"}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground truncate max-w-35">
+                        {currentOrganization?.slug || "sem-organizacao"}
+                      </span>
+                    </div>
+                    <ChevronDown className="h-4 w-4 opacity-70" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="start"
+                  className="w-80 p-2 max-h-100 flex flex-col"
+                >
+                  <DropdownMenuLabel className="flex items-center justify-between px-2">
+                    <div className="flex items-center gap-2">
+                      <Users className="h-4 w-4" />
+                      <span>Organizações</span>
+                      <Badge variant="outline" className="ml-2">
+                        {organizations.length}
+                      </Badge>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-xs"
+                      asChild
+                    >
+                      <Link href="#">
+                        <Plus className="h-3 w-3 mr-1" />
+                        Nova
+                      </Link>
+                    </Button>
+                  </DropdownMenuLabel>
+
+                  {/* Busca de Organizações */}
+                  <div className="p-2">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        placeholder="Buscar por nome ou slug..."
+                        value={organizationSearchTerm}
+                        onChange={(e) => {
+                          setOrganizationSearchTerm(e.target.value);
+                          setOrganizationsLimit(5);
+                        }}
+                        className="pl-9 h-9 text-sm"
+                        autoFocus
+                      />
+                    </div>
+                  </div>
+
+                  <DropdownMenuSeparator />
+
+                  {/* Lista de Organizações */}
+                  <div className="flex-1 overflow-y-auto max-h-70 p-1">
+                    {filteredOrganizations.length === 0 ? (
+                      <div className="p-4 text-center">
+                        <Building className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                        <p className="text-sm text-muted-foreground">
+                          {organizationSearchTerm
+                            ? `Nenhuma organização para "${organizationSearchTerm}"`
+                            : "Nenhuma organização disponível"}
+                        </p>
+                      </div>
+                    ) : (
+                      <>
+                        {filteredOrganizations.map((org) => (
+                          <DropdownMenuItem
+                            key={org.id}
+                            onClick={() => switchOrganization(org.id)}
+                            className={cn(
+                              "flex items-center justify-between gap-2 cursor-pointer p-2 rounded-md mb-1",
+                              currentOrganization?.id === org.id && "bg-accent",
+                            )}
+                          >
+                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                              <div className="h-8 w-8 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
+                                <Building className="h-4 w-4 text-primary" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <p className="font-medium truncate text-sm">
+                                    {org.name}
+                                  </p>
+                                  {currentOrganization?.id === org.id && (
+                                    <Badge className="h-4 px-1 text-[10px]">
+                                      Atual
+                                    </Badge>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                  <code className="bg-muted px-1 rounded text-[10px]">
+                                    {org.slug}
+                                  </code>
+                                  <span>•</span>
+                                  <Globe className="h-3 w-3" />
+                                  <span>{org.locale}</span>
+                                </div>
+                              </div>
+                            </div>
+                            {currentOrganization?.id === org.id && (
+                              <Check className="h-4 w-4 text-primary shrink-0" />
+                            )}
+                          </DropdownMenuItem>
+                        ))}
+
+                        {/* Indicador de Mais Organizações */}
+                        {hasMoreOrganizations && (
+                          <>
+                            <DropdownMenuSeparator className="my-1" />
+                            <div className="p-2">
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="text-xs text-muted-foreground">
+                                  Mostrando {filteredOrganizations.length} de{" "}
+                                  {organizationSearchTerm
+                                    ? organizations.filter(
+                                        (org) =>
+                                          org.name
+                                            .toLowerCase()
+                                            .includes(
+                                              organizationSearchTerm.toLowerCase(),
+                                            ) ||
+                                          org.slug
+                                            .toLowerCase()
+                                            .includes(
+                                              organizationSearchTerm.toLowerCase(),
+                                            ),
+                                      ).length
+                                    : organizations.length}{" "}
+                                  organizações
+                                </span>
+                              </div>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="w-full text-xs"
+                                onClick={loadMoreOrganizations}
+                              >
+                                Carregar mais organizações
+                              </Button>
+                            </div>
+                          </>
+                        )}
+                      </>
+                    )}
+                  </div>
+
+                  <DropdownMenuSeparator />
+
+                  {/* Ações Rápidas */}
+                  <div className="p-2 space-y-1">
+                    <DropdownMenuItem className="cursor-pointer" asChild>
+                      <Link
+                        href="#"
+                        className="flex items-center gap-2 p-2 rounded-md hover:bg-accent"
+                      >
+                        <div className="h-8 w-8 rounded-md bg-blue-500/10 flex items-center justify-center">
+                          <Users className="h-4 w-4 text-blue-500" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">Gerenciar todas</p>
+                          <p className="text-xs text-muted-foreground">
+                            Ver todas as organizações
+                          </p>
+                        </div>
+                      </Link>
+                    </DropdownMenuItem>
+                  </div>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
 
             {/* Navegação Desktop */}
             <nav className="hidden lg:flex items-center gap-1">
@@ -470,8 +483,9 @@ export default function Header() {
 
                         <motion.div
                           className={cn(
-                            "absolute bottom-0 left-1/2 h-0.5 bg-linear-to-r rounded-full",
-                            item.gradient,
+                            "absolute bottom-0 left-1/2 h-0.5 rounded-full",
+                            item.gradient &&
+                              `bg-linear-to-r ${item.gradient}`,
                           )}
                           initial={{ width: 0, x: "-50%" }}
                           animate={{
@@ -489,43 +503,34 @@ export default function Header() {
 
             {/* Ações do Header */}
             <div className="flex items-center gap-2">
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="relative"
-                        onClick={() => setSearchOpen(true)}
-                      >
-                        <Search className="h-5 w-5" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Buscar ⌘K</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </motion.div>
+              {/* Botão de Busca */}
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="relative"
+                      onClick={() => setSearchOpen(true)}
+                    >
+                      <Search className="h-5 w-5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Buscar ⌘K</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
 
-              {/* Ações rápidas */}
+              {/* Ações Rápidas */}
               <DropdownMenu
                 open={quickActionOpen}
                 onOpenChange={setQuickActionOpen}
               >
                 <DropdownMenuTrigger asChild>
-                  <motion.div
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    <Button variant="ghost" size="icon" className="relative">
-                      <Sparkles className="h-5 w-5" />
-                    </Button>
-                  </motion.div>
+                  <Button variant="ghost" size="icon" className="relative">
+                    <Sparkles className="h-5 w-5" />
+                  </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
                   align="end"
@@ -555,11 +560,7 @@ export default function Header() {
               {/* Notificações */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <motion.div
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="relative"
-                  >
+                  <div className="relative">
                     <Button variant="ghost" size="icon" className="relative">
                       <Bell className="h-5 w-5" />
                       {notifications > 0 && (
@@ -572,7 +573,7 @@ export default function Header() {
                         </motion.span>
                       )}
                     </Button>
-                  </motion.div>
+                  </div>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
                   align="end"
@@ -601,9 +602,8 @@ export default function Header() {
                           <DropdownMenuItem className="gap-3 py-3 cursor-pointer">
                             <div
                               className={cn(
-                                "h-10 w-10 rounded-lg flex items-center justify-center",
+                                "h-10 w-10 rounded-lg flex items-center justify-center bg-opacity-10",
                                 item.color,
-                                "bg-opacity-10",
                               )}
                             >
                               <item.icon
@@ -642,31 +642,26 @@ export default function Header() {
               </DropdownMenu>
 
               {/* Tema */}
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={toggleDarkMode}
-                      >
-                        {darkMode ? (
-                          <Sun className="h-5 w-5" />
-                        ) : (
-                          <Moon className="h-5 w-5" />
-                        )}
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>{darkMode ? "Modo claro" : "Modo escuro"}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </motion.div>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={toggleDarkMode}
+                    >
+                      {darkMode ? (
+                        <Sun className="h-5 w-5" />
+                      ) : (
+                        <Moon className="h-5 w-5" />
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{darkMode ? "Modo claro" : "Modo escuro"}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
 
               {/* Perfil do Usuário */}
               <AlertDialog>
@@ -675,25 +670,25 @@ export default function Header() {
                   onOpenChange={setUserMenuOpen}
                 >
                   <DropdownMenuTrigger asChild>
-                    <motion.div
-                      whileHover={{ scale: 1.02 }}
-                      className="flex items-center gap-2 p-1 pr-2 rounded-full hover:bg-accent cursor-pointer transition-all"
-                    >
+                    <div className="flex items-center gap-2 p-1 pr-2 rounded-full hover:bg-accent cursor-pointer transition-all">
                       <Avatar className="h-8 w-8 ring-2 ring-primary/20 ring-offset-2">
                         <AvatarImage
-                          src={session?.user?.image || ""}
-                          alt={session?.user?.name}
+                          src={session?.user?.image ?? undefined}
+                          alt={session?.user.name}
                         />
                         <AvatarFallback className="bg-linear-to-br from-primary to-purple-600 text-white">
-                          AC
+                          {session?.user.name
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")}
                         </AvatarFallback>
                       </Avatar>
                       <div className="hidden lg:flex flex-col items-start">
                         <span className="text-sm font-medium">
-                          {session?.user?.name}
+                          {session?.user.name}
                         </span>
                         <span className="text-xs text-muted-foreground">
-                          {session?.user?.email}
+                          {session?.user.email}
                         </span>
                       </div>
                       <ChevronDown
@@ -702,7 +697,7 @@ export default function Header() {
                           userMenuOpen && "rotate-180",
                         )}
                       />
-                    </motion.div>
+                    </div>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent
                     align="end"
@@ -713,11 +708,14 @@ export default function Header() {
                       <div className="flex items-start gap-4">
                         <Avatar className="h-14 w-14 ring-4 ring-white/50">
                           <AvatarImage
-                            src={session?.user.image || ""}
+                            src={session?.user.image ?? undefined}
                             alt={session?.user.name}
                           />
                           <AvatarFallback className="bg-linear-to-br from-primary to-purple-600 text-white text-lg">
-                            AC
+                            {session?.user.name
+                              .split(" ")
+                              .map((n) => n[0])
+                              .join("")}
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1">
@@ -727,24 +725,122 @@ export default function Header() {
                             </h3>
                             <Badge className="bg-linear-to-r from-amber-500 to-orange-500">
                               <Crown className="h-3 w-3 mr-1" />
-                              {session?.user?.profile?.plan || "Free"}
+                              {session?.user?.profile?.plan}
                             </Badge>
                           </div>
                           <p className="text-sm text-muted-foreground">
                             {session?.user.email}
                           </p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {session?.user?.profile?.role || "User"} •{" "}
-                            {session?.user?.profile?.location || "Brasil"}
-                          </p>
+
+                          {/* Organização Atual */}
+                          {currentOrganization && (
+                            <div className="mt-3 p-3 rounded-lg bg-card border">
+                              <div className="flex items-center gap-2">
+                                <Building className="h-4 w-4 text-primary" />
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <p className="text-sm font-medium truncate">
+                                      {currentOrganization.name}
+                                    </p>
+                                    <Badge
+                                      variant="outline"
+                                      className="h-4 px-1 text-[10px]"
+                                    >
+                                      Atual
+                                    </Badge>
+                                  </div>
+                                  <code className="text-xs text-muted-foreground bg-muted px-1 rounded">
+                                    {currentOrganization.slug}
+                                  </code>
+                                </div>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-7 px-2 text-xs"
+                                    >
+                                      Trocar
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent
+                                    align="end"
+                                    className="w-56"
+                                  >
+                                    <div className="p-2">
+                                      <div className="relative">
+                                        <Search className="absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
+                                        <Input
+                                          placeholder="Buscar..."
+                                          value={organizationSearchTerm}
+                                          onChange={(e) => {
+                                            setOrganizationSearchTerm(
+                                              e.target.value,
+                                            );
+                                            setOrganizationsLimit(5);
+                                          }}
+                                          className="pl-7 h-8 text-sm"
+                                        />
+                                      </div>
+                                    </div>
+                                    <div className="max-h-48 overflow-y-auto">
+                                      {filteredOrganizations
+                                        .filter(
+                                          (org) =>
+                                            org.id !== currentOrganization.id,
+                                        )
+                                        .slice(0, 3)
+                                        .map((org) => (
+                                          <DropdownMenuItem
+                                            key={org.id}
+                                            onClick={() => {
+                                              switchOrganization(org.id);
+                                              setUserMenuOpen(false);
+                                            }}
+                                            className="cursor-pointer"
+                                          >
+                                            <div className="flex items-center gap-2 w-full">
+                                              <Building className="h-4 w-4" />
+                                              <div className="flex-1 min-w-0">
+                                                <p className="truncate text-sm">
+                                                  {org.name}
+                                                </p>
+                                                <p className="text-xs text-muted-foreground truncate">
+                                                  {org.slug}
+                                                </p>
+                                              </div>
+                                            </div>
+                                          </DropdownMenuItem>
+                                        ))}
+
+                                      {filteredOrganizations.length > 3 && (
+                                        <div className="p-2 border-t">
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="w-full text-xs"
+                                            asChild
+                                          >
+                                            <Link href="#">
+                                              Ver todas ({organizations.length})
+                                            </Link>
+                                          </Button>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
 
-                      {/* Informações */}
+                      {/* Estatísticas */}
                       <div className="grid grid-cols-3 gap-4 mt-6">
                         <div className="text-center">
                           <div className="text-2xl font-bold bg-linear-to-r from-primary to-purple-600 bg-clip-text text-transparent">
-                            {session?.user?.profile?.content || 0}
+                            {session?.user?.profile?.content}
                           </div>
                           <div className="text-xs text-muted-foreground">
                             Conteúdos
@@ -752,7 +848,10 @@ export default function Header() {
                         </div>
                         <div className="text-center">
                           <div className="text-2xl font-bold bg-linear-to-r from-emerald-500 to-green-600 bg-clip-text text-transparent">
-                            {session?.user?.profile?.revenue || 0}
+                            R${" "}
+                            {session?.user?.profile?.revenue?.toLocaleString(
+                              "pt-BR",
+                            )}
                           </div>
                           <div className="text-xs text-muted-foreground">
                             Receita
@@ -760,7 +859,7 @@ export default function Header() {
                         </div>
                         <div className="text-center">
                           <div className="text-2xl font-bold bg-linear-to-r from-amber-500 to-orange-600 bg-clip-text text-transparent">
-                            {session?.user?.profile?.tasks || 0}
+                            {session?.user?.profile?.tasks}
                           </div>
                           <div className="text-xs text-muted-foreground">
                             Tarefas
@@ -769,6 +868,7 @@ export default function Header() {
                       </div>
                     </div>
 
+                    {/* Menu de Opções */}
                     <div className="p-2">
                       <DropdownMenuGroup>
                         <DropdownMenuItem className="gap-3 p-3 cursor-pointer rounded-lg">
@@ -802,7 +902,7 @@ export default function Header() {
                           <div>
                             <p>Assinatura</p>
                             <p className="text-xs text-muted-foreground">
-                              Plano {session?.user?.profile?.plan || "Free"}
+                              Plano {session?.user?.profile?.plan}
                             </p>
                           </div>
                         </DropdownMenuItem>
@@ -878,37 +978,17 @@ export default function Header() {
                             </div>
                           </DropdownMenuItem>
                         </AlertDialogTrigger>
-
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle className="text-center">
-                              Tem certeza?
-                            </AlertDialogTitle>
-                            <AlertDialogDescription className="text-center">
-                              Deseja mesmo sair?
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-
-                          <AlertDialogFooter>
-                            <AlertDialogCancel className="text-center">
-                              Cancelar
-                            </AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={signOut}
-                              className="bg-red-600 hover:bg-red-700 text-center text-white"
-                            >
-                              Confirmar
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
                       </DropdownMenuGroup>
                     </div>
 
+                    {/* Footer do Menu */}
                     <div className="p-4 border-t">
                       <div className="flex items-center justify-between text-xs text-muted-foreground">
                         <span>
                           Membro desde{" "}
-                          {session?.user?.createdAt.toString() ?? "-"}
+                          {session?.user?.createdAt
+                            ? new Date(session.user.createdAt).getFullYear()
+                            : ""}
                         </span>
                         <Button
                           variant="ghost"
@@ -921,32 +1001,45 @@ export default function Header() {
                     </div>
                   </DropdownMenuContent>
                 </DropdownMenu>
+
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle className="text-center">
+                      Tem certeza?
+                    </AlertDialogTitle>
+                    <AlertDialogDescription className="text-center">
+                      Deseja mesmo sair da sua conta?
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={signOut}
+                      className="bg-red-600 hover:bg-red-700 text-white"
+                    >
+                      Confirmar
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
               </AlertDialog>
 
               {/* Menu Mobile */}
               <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
                 <SheetTrigger asChild className="lg:hidden">
-                  <motion.div
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    <Button variant="ghost" size="icon">
-                      <Menu className="h-5 w-5" />
-                    </Button>
-                  </motion.div>
+                  <Button variant="ghost" size="icon">
+                    <Menu className="h-5 w-5" />
+                  </Button>
                 </SheetTrigger>
-                <SheetContent side="right" className="w-[90vw] sm:w-100 p-0">
+                <SheetContent side="right" className="w-[90vw] sm:w-96 p-0">
                   <div className="flex flex-col h-full">
+                    {/* Header do Mobile */}
                     <div className="p-6 border-b">
                       <div className="flex items-center justify-between mb-6">
                         <div className="flex items-center gap-3">
                           <div className="relative h-10 w-10">
-                            <Image
-                              src="/logo.png"
-                              alt="CreatorHub"
-                              fill
-                              className="object-contain"
-                            />
+                            <div className="h-10 w-10 rounded-lg bg-linear-to-r from-red-600 via-purple-600 to-blue-600 flex items-center justify-center">
+                              <span className="text-white font-bold">CH</span>
+                            </div>
                           </div>
                           <div>
                             <span className="text-xl font-bold">
@@ -966,14 +1059,132 @@ export default function Header() {
                         </Button>
                       </div>
 
-                      {/* Informações do usuário mobile */}
+                      {/* Organização no Mobile */}
+                      <div className="mb-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <Building className="h-4 w-4 text-primary" />
+                            <p className="text-sm font-medium">Organização</p>
+                          </div>
+                          <Badge variant="outline">
+                            {organizations.length} orgs
+                          </Badge>
+                        </div>
+
+                        {/* Organização Atual */}
+                        {currentOrganization && (
+                          <div className="p-3 rounded-lg bg-accent border mb-3">
+                            <div className="flex items-center gap-3">
+                              <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                                <Building className="h-5 w-5 text-primary" />
+                              </div>
+                              <div className="flex-1">
+                                <p className="font-medium">
+                                  {currentOrganization.name}
+                                </p>
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                                  <code className="bg-muted px-1 rounded">
+                                    {currentOrganization.slug}
+                                  </code>
+                                  <span>•</span>
+                                  <Globe className="h-3 w-3" />
+                                  <span>{currentOrganization.locale}</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Busca e Lista de Organizações */}
+                        <div className="space-y-2">
+                          <div className="relative">
+                            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                            <Input
+                              placeholder="Buscar organização..."
+                              value={organizationSearchTerm}
+                              onChange={(e) => {
+                                setOrganizationSearchTerm(e.target.value);
+                                setOrganizationsLimit(5);
+                              }}
+                              className="pl-9 h-9"
+                            />
+                          </div>
+
+                          <div className="max-h-60 overflow-y-auto border rounded-lg">
+                            {filteredOrganizations.length === 0 ? (
+                              <div className="p-4 text-center">
+                                <p className="text-sm text-muted-foreground">
+                                  Nenhuma organização encontrada
+                                </p>
+                              </div>
+                            ) : (
+                              filteredOrganizations.map((org) => (
+                                <div
+                                  key={org.id}
+                                  onClick={() => {
+                                    switchOrganization(org.id);
+                                    setMobileMenuOpen(false);
+                                  }}
+                                  className={cn(
+                                    "flex items-center gap-3 p-3 cursor-pointer hover:bg-accent border-b last:border-b-0",
+                                    currentOrganization?.id === org.id &&
+                                      "bg-accent",
+                                  )}
+                                >
+                                  <div className="h-8 w-8 rounded-md bg-primary/10 flex items-center justify-center">
+                                    <Building className="h-4 w-4 text-primary" />
+                                  </div>
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2">
+                                      <p className="font-medium text-sm">
+                                        {org.name}
+                                      </p>
+                                      {currentOrganization?.id === org.id && (
+                                        <Badge className="h-4 px-1 text-[10px]">
+                                          Atual
+                                        </Badge>
+                                      )}
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">
+                                      {org.slug} • {org.locale}
+                                    </p>
+                                  </div>
+                                  {currentOrganization?.id === org.id && (
+                                    <Check className="h-4 w-4 text-primary" />
+                                  )}
+                                </div>
+                              ))
+                            )}
+
+                            {hasMoreOrganizations && (
+                              <div className="p-3 border-t">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="w-full text-xs"
+                                  onClick={loadMoreOrganizations}
+                                >
+                                  Carregar mais organizações
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Usuário no Mobile */}
                       <div className="flex items-center gap-3 p-3 rounded-lg bg-accent">
                         <Avatar className="h-10 w-10">
                           <AvatarImage
-                            src={session?.user?.image || ""}
+                            src={session?.user?.image ?? undefined}
                             alt={session?.user?.name}
                           />
-                          <AvatarFallback>AC</AvatarFallback>
+                          <AvatarFallback>
+                            {session?.user?.name
+                              .split(" ")
+                              .map((n) => n[0])
+                              .join("")}
+                          </AvatarFallback>
                         </Avatar>
                         <div className="flex-1">
                           <p className="font-medium">{session?.user?.name}</p>
@@ -982,11 +1193,12 @@ export default function Header() {
                           </p>
                         </div>
                         <Badge variant="secondary">
-                          {session?.user?.profile?.plan || "Free"}
+                          {session?.user?.profile?.plan}
                         </Badge>
                       </div>
                     </div>
 
+                    {/* Navegação Mobile */}
                     <div className="flex-1 overflow-y-auto p-4">
                       <nav className="space-y-1">
                         {navigationItems.map((item) => (
@@ -1045,10 +1257,12 @@ export default function Header() {
 
                       <Separator className="my-6" />
 
+                      {/* Configurações Mobile */}
                       <div className="space-y-2">
                         <Button
                           variant="ghost"
                           className="w-full justify-start gap-3"
+                          onClick={() => setMobileMenuOpen(false)}
                         >
                           <Settings className="h-5 w-5" />
                           Configurações
@@ -1056,6 +1270,7 @@ export default function Header() {
                         <Button
                           variant="ghost"
                           className="w-full justify-start gap-3"
+                          onClick={() => setMobileMenuOpen(false)}
                         >
                           <HelpCircle className="h-5 w-5" />
                           Ajuda & Suporte
@@ -1063,6 +1278,7 @@ export default function Header() {
                         <Button
                           variant="ghost"
                           className="w-full justify-start gap-3 text-destructive"
+                          onClick={signOut}
                         >
                           <LogOut className="h-5 w-5" />
                           Sair
