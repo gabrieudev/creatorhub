@@ -30,8 +30,9 @@ export default async function organizationController(
     const q = request.query as any;
     const limit = q?.limit ? Number(q.limit) : undefined;
     const offset = q?.offset ? Number(q.offset) : undefined;
+    const userId = (request as any).session.user.id;
 
-    const list = await OrganizationService.list({ limit, offset });
+    const list = await OrganizationService.list(userId, { limit, offset });
     return reply.send(list.map((r) => organizationResponseSchema.parse(r)));
   });
 

@@ -1,11 +1,14 @@
 import { db } from "@CreatorHub/db";
-import { organizationsInApp } from "@CreatorHub/db/schema/schema";
-import { eq, sql, desc } from "drizzle-orm";
+import {
+  organizationMembersInApp,
+  organizationsInApp,
+} from "@CreatorHub/db/schema/schema";
+import { and, desc, eq } from "drizzle-orm";
+import { slugify } from "../../lib/utils";
 import type {
   CreateOrganizationInput,
   UpdateOrganizationInput,
 } from "./organization.dto";
-import { slugify } from "../../lib/utils";
 
 export const OrganizationRepository = {
   async create(data: CreateOrganizationInput) {
@@ -46,18 +49,29 @@ export const OrganizationRepository = {
     const [row] = await db
       .select()
       .from(organizationsInApp)
-      .where(sql`lower(${organizationsInApp.slug}) = ${slug.toLowerCase()}`);
+      .where(eq(organizationsInApp.slug, slug));
 
     return row ?? null;
   },
 
-  async list(options?: { limit?: number; offset?: number }) {
+  async list(userId: string, options?: { limit?: number; offset?: number }) {
     const limit = options?.limit ?? 50;
     const offset = options?.offset ?? 0;
 
     return db
-      .select()
+      .select({
+        id: organizationsInApp.id,
+        name: organizationsInApp.name,
+        slug: organizationsInApp.slug,
+        createdAt: organizationsInApp.createdAt,
+        updatedAt: organizationsInApp.updatedAt,
+      })
       .from(organizationsInApp)
+      .innerJoin(
+        organizationMembersInApp,
+        eq(organizationMembersInApp.organizationId, organizationsInApp.id),
+      )
+      .where(eq(organizationMembersInApp.userId, userId))
       .limit(limit)
       .offset(offset)
       .orderBy(desc(organizationsInApp.createdAt));

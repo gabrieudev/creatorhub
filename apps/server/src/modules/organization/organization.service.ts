@@ -66,8 +66,8 @@ export const OrganizationService = {
     return OrganizationRepository.findBySlug(slug);
   },
 
-  async list(opts?: { limit?: number; offset?: number }) {
-    return OrganizationRepository.list(opts);
+  async list(userId: string, opts?: { limit?: number; offset?: number }) {
+    return OrganizationRepository.list(userId, opts);
   },
 
   async update(id: string, input: unknown) {
@@ -89,7 +89,9 @@ export const OrganizationService = {
       (input as any)?.createdAt &&
       (input as any).createdAt !== existing.createdAt
     ) {
-      throw new BadRequestError("Não é possível alterar o campo imutável 'createdAt'");
+      throw new BadRequestError(
+        "Não é possível alterar o campo imutável 'createdAt'",
+      );
     }
 
     // Se slug não está sendo alterado, faz update simples
