@@ -34,7 +34,7 @@ import type {
 
 export const DashboardRepository = {
   async getDashboardStats(organizationId: string): Promise<DashboardStats> {
-    // Total revenue
+    // Receita total
     const totalRevenueResult = await db
       .select({ total: sum(revenueEntriesInApp.amount) })
       .from(revenueEntriesInApp)
@@ -42,7 +42,7 @@ export const DashboardRepository = {
       .execute();
     const totalRevenue = totalRevenueResult[0]?.total || 0;
 
-    // Monthly revenue (current month)
+    // Receita mensal (mês atual)
     const startOfMonth = new Date();
     startOfMonth.setDate(1);
     startOfMonth.setHours(0, 0, 0, 0);
@@ -68,7 +68,7 @@ export const DashboardRepository = {
       .execute();
     const monthlyRevenue = monthlyRevenueResult[0]?.total || 0;
 
-    // Active content (published in last 30 days)
+    // Conteúdo ativo (publicado nos últimos 30 dias)
     const activeContentResult = await db
       .select({ count: count() })
       .from(contentItemsInApp)
@@ -85,7 +85,7 @@ export const DashboardRepository = {
       .execute();
     const activeContent = activeContentResult[0]?.count;
 
-    // Pending tasks
+    // Tarefas pendentes
     const pendingTasksResult = await db
       .select({ count: count() })
       .from(tasksInApp)
@@ -98,7 +98,7 @@ export const DashboardRepository = {
       .execute();
     const pendingTasks = pendingTasksResult[0]?.count;
 
-    // Team members
+    // Membros da equipe
     const teamMembersResult = await db
       .select({ count: count() })
       .from(organizationMembersInApp)
@@ -111,7 +111,7 @@ export const DashboardRepository = {
       .execute();
     const teamMembers = teamMembersResult[0]?.count;
 
-    // Upcoming publications (scheduled for next 7 days)
+    // Publicações agendadas (programadas para os próximos 7 dias)
     const upcomingPublicationsResult = await db
       .select({ count: count() })
       .from(contentItemsInApp)
@@ -129,7 +129,7 @@ export const DashboardRepository = {
       .execute();
     const upcomingPublications = upcomingPublicationsResult[0]?.count;
 
-    // Revenue growth (compare current month with previous month)
+    // Crescimento da receita (comparar mês atual com mês anterior)
     const startOfLastMonth = new Date();
     startOfLastMonth.setMonth(startOfLastMonth.getMonth() - 1);
     startOfLastMonth.setDate(1);
@@ -161,7 +161,7 @@ export const DashboardRepository = {
         : ((Number(monthlyRevenue) - lastMonthRevenue) / lastMonthRevenue) *
           100;
 
-    // Task completion rate (tasks completed in last 30 days vs total tasks created in last 30 days)
+    // Taxa de conclusão de tarefas (tarefas concluídas nos últimos 30 dias vs total de tarefas criadas nos últimos 30 dias)
     const startOfLast30Days = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
     const doneTasksResult = await db
@@ -210,7 +210,7 @@ export const DashboardRepository = {
     organizationId: string,
     period: "week" | "month" | "quarter" | "year",
   ): Promise<RevenueByPlatform> {
-    // Calculate date range based on period
+    // Calcular intervalo de datas com base no período
     let startDate: Date;
     const endDate = new Date();
 
@@ -235,7 +235,7 @@ export const DashboardRepository = {
         startDate.setMonth(startDate.getMonth() - 1);
     }
 
-    // Revenue by platform in period
+    // Receita por plataforma no período
     const revenueByPlatform = await db
       .select({
         platform: revenueEntriesInApp.platform,
@@ -255,7 +255,7 @@ export const DashboardRepository = {
       .groupBy(revenueEntriesInApp.platform)
       .execute();
 
-    // Total revenue in period
+    // Receita total no período
     const totalRevenueResult = await db
       .select({ total: sum(revenueEntriesInApp.amount) })
       .from(revenueEntriesInApp)
@@ -272,7 +272,7 @@ export const DashboardRepository = {
       .execute();
     const totalRevenue = totalRevenueResult[0]?.total || 0;
 
-    // Calculate growth compared to previous period
+    // Calcular crescimento em comparação com o período anterior
     let previousStartDate: Date;
     let previousEndDate: Date;
 
@@ -300,7 +300,7 @@ export const DashboardRepository = {
         break;
     }
 
-    // Previous period revenue by platform
+    // Receita do período anterior por plataforma
     const previousRevenueByPlatform = await db
       .select({
         platform: revenueEntriesInApp.platform,
@@ -348,7 +348,7 @@ export const DashboardRepository = {
       };
     });
 
-    // Add missing platforms with zero values
+    // Adicionar plataformas com zero receita
     const allPlatforms: Array<
       "youtube" | "tiktok" | "instagram" | "twitch" | "facebook" | "other"
     > = ["youtube", "tiktok", "instagram", "twitch", "facebook", "other"];
@@ -374,7 +374,7 @@ export const DashboardRepository = {
   ): Promise<ContentPerformance> {
     const offset = (page - 1) * limit;
 
-    // First, get revenue per content item
+    // Primeiro, criar uma subconsulta para agregar a receita por contentItemId
     const revenueSubquery = db
       .select({
         contentItemId: revenueEntriesInApp.contentItemId,
@@ -588,7 +588,7 @@ export const DashboardRepository = {
       .offset(offset)
       .execute();
 
-    // Get target names based on table
+    // Obtém os nomes dos alvos com base no tipo
     const result = await Promise.all(
       recentActivity.map(async (activity) => {
         let targetName = "";
@@ -652,7 +652,7 @@ export const DashboardRepository = {
     range: "day" | "week" | "month" | "quarter",
     period: number,
   ): Promise<RevenueTrend> {
-    // Generate time series based on range and period
+    // Gerar série temporal com base no intervalo e período
     const endDate = new Date();
     let startDate = new Date();
 
@@ -671,7 +671,7 @@ export const DashboardRepository = {
         break;
     }
 
-    // Group by date range
+    // Agrupar receita por intervalo
     let dateFormat: string;
     switch (range) {
       case "day":
@@ -708,7 +708,7 @@ export const DashboardRepository = {
       .orderBy(periodExpr)
       .execute();
 
-    // Calculate growth
+    // Calcular crescimento
     const result: RevenueTrend = [];
     for (let i = 0; i < revenueTrend.length; i++) {
       const current = revenueTrend[i];

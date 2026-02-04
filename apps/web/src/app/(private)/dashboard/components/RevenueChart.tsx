@@ -1,6 +1,5 @@
 "use client";
 
-import { TrendingUp } from "lucide-react";
 import { useTheme } from "next-themes";
 import {
   Area,
@@ -13,24 +12,36 @@ import {
   YAxis,
 } from "recharts";
 
-interface RevenueChartProps {
-  data: { month: string; revenue: number }[];
+interface RevenuePoint {
+  month: string;
+  revenue: number;
 }
 
-export default function RevenueChart({ data }: RevenueChartProps) {
+interface RevenueChartProps {
+  data: RevenuePoint[];
+  timeRange: "week" | "month" | "quarter";
+}
+
+export default function RevenueChart({ data, timeRange }: RevenueChartProps) {
   const { theme } = useTheme();
   const isDark = theme === "dark";
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
+      const value = payload[0].value as number;
       return (
-        <div className="bg-background p-3 border rounded-lg shadow-lg">
+        <div
+          className="bg-background p-3 border rounded-lg shadow-lg"
+          style={{ minWidth: 120 }}
+        >
           <p className="font-semibold text-foreground">{label}</p>
           <p className="text-green-600 dark:text-green-400 font-bold">
-            R${" "}
-            {payload[0].value.toLocaleString("pt-BR", {
+            {new Intl.NumberFormat("pt-BR", {
+              style: "currency",
+              currency: "BRL",
               minimumFractionDigits: 2,
-            })}
+              maximumFractionDigits: 2,
+            }).format(value)}
           </p>
         </div>
       );
@@ -40,6 +51,72 @@ export default function RevenueChart({ data }: RevenueChartProps) {
 
   const gridColor = isDark ? "#374151" : "#E5E7EB";
   const textColor = isDark ? "#9CA3AF" : "#6B7280";
+
+  const tickTargets: Record<string, number> = {
+    day: 7,
+    week: 6,
+    month: 7,
+    quarter: 4,
+  };
+
+  const target = tickTargets[timeRange] ?? 7;
+  const pointCount = data.length || 0;
+
+  const interval =
+    pointCount <= target || pointCount === 0
+      ? 0
+      : Math.ceil(pointCount / target) - 1;
+
+  const rotateAngle = pointCount > 10 ? -45 : 0;
+  const textAnchor = pointCount > 10 ? "end" : "middle";
+  const dx = pointCount > 10 ? -6 : 0;
+
+  // Formata X axis labels com base no timeRange.
+  function tickFormatterX(value: string) {
+    if (!value) return value;
+
+    if (timeRange === "month") {
+      return value;
+    }
+
+    if (timeRange === "week") {
+      if (value.startsWith("Sem") || value.includes("Sem")) return value;
+      const m = value.match(/^(\d{4})-(\d{2})$/);
+      if (m) return `Sem ${m[2]}/${m[1]}`;
+      return value;
+    }
+
+    if (timeRange === "quarter") {
+      const q1 = value.match(/^(\d{4})-Q([1-4])$/i);
+      if (q1) return `Q${q1[2]}/${q1[1]}`;
+      const q2 = value.match(/^(\d{4})-([1-4])$/);
+      if (q2) return `Q${q2[2]}/${q2[1]}`;
+      return value;
+    }
+
+    return value;
+  }
+
+  // se valores grandes, mostrar em k (ex: R$12k)
+  function yTickFormatter(value: number) {
+    if (Math.abs(value) >= 1_000_000) {
+      return `R$${(value / 1_000_000).toFixed(1)}M`;
+    }
+    if (Math.abs(value) >= 1_000) {
+      const v = +(value / 1000).toFixed(1);
+
+      const n = v.toLocaleString("pt-BR", {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 1,
+      });
+      return `R$${n}k`;
+    }
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+      maximumFractionDigits: 0,
+    }).format(value);
+  }
 
   return (
     <div className="h-75">
@@ -58,24 +135,36 @@ export default function RevenueChart({ data }: RevenueChartProps) {
               <stop offset="95%" stopColor="#34D399" stopOpacity={0} />
             </linearGradient>
           </defs>
+
           <CartesianGrid
             strokeDasharray="3 3"
             stroke={gridColor}
             vertical={false}
           />
+
           <XAxis
             dataKey="month"
             axisLine={false}
             tickLine={false}
             tick={{ fill: textColor, fontSize: 12 }}
+            tickFormatter={tickFormatterX}
+            interval={interval}
+            tickMargin={8}
+            angle={rotateAngle}
+            textAnchor={textAnchor as any}
+            dx={dx}
           />
+
           <YAxis
             axisLine={false}
             tickLine={false}
             tick={{ fill: textColor, fontSize: 12 }}
-            tickFormatter={(value) => `R$${value / 1000}k`}
+            tickFormatter={yTickFormatter}
+            domain={["dataMin", "dataMax"]}
           />
+
           <Tooltip content={<CustomTooltip />} />
+
           <Area
             type="monotone"
             dataKey="revenue"
@@ -84,6 +173,7 @@ export default function RevenueChart({ data }: RevenueChartProps) {
             fill={isDark ? "url(#colorRevenueDark)" : "url(#colorRevenue)"}
             dot={false}
           />
+
           <Line
             type="monotone"
             dataKey="revenue"
@@ -93,10 +183,6 @@ export default function RevenueChart({ data }: RevenueChartProps) {
           />
         </AreaChart>
       </ResponsiveContainer>
-      <div className="flex items-center gap-2 mt-4 text-sm text-green-600 dark:text-green-400">
-        <TrendingUp className="h-4 w-4" />
-        <span>+15.3% em relação ao mês anterior</span>
-      </div>
     </div>
   );
 }

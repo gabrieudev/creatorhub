@@ -23,9 +23,7 @@ import {
   CheckCircle,
   Clock,
   DollarSign,
-  Download,
   Eye,
-  Filter,
   MessageSquare,
   MoreVertical,
   Plus,
@@ -34,141 +32,34 @@ import {
   Users,
   Video,
 } from "lucide-react";
-import { useState } from "react";
-import {
-  contentPerformance,
-  dashboardStats,
-  recentActivity,
-  revenueByPlatform,
-  upcomingContent,
-} from "./mocks";
-import { ContentPlatform, ContentStatus, TaskStatus } from "./types";
-import { useSession } from "@/providers/auth-provider";
 
+import { ContentPlatform, ContentStatus } from "@/shared/enums";
 import ActivityFeed from "./components/ActivityFeed";
 import PlatformDistribution from "./components/PlatformDistribution";
 import RevenueChart from "./components/RevenueChart";
-
-interface StatCardProps {
-  title: string;
-  value: string;
-  change: string;
-  isPositive: boolean;
-  icon: any;
-  iconColor: string;
-  iconBgColor: string;
-  delay: number;
-}
-
-function StatCard({
-  title,
-  value,
-  change,
-  isPositive,
-  icon: Icon,
-  iconColor,
-  iconBgColor,
-  delay,
-}: StatCardProps) {
-  return (
-    <motion.div
-      variants={{
-        initial: { opacity: 0, y: 20 },
-        animate: { opacity: 1, y: 0 },
-      }}
-      transition={{ delay }}
-      whileHover={{ y: -4 }}
-    >
-      <Card className="border hover:shadow-md transition-all h-full">
-        <CardContent className="p-6">
-          <div className="flex items-start justify-between mb-4">
-            <div className={`p-2 rounded-lg ${iconBgColor} ${iconColor}`}>
-              <Icon className="h-5 w-5" />
-            </div>
-            <Badge
-              variant="outline"
-              className={`${isPositive ? "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800" : "bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800"}`}
-            >
-              {change}
-            </Badge>
-          </div>
-          <h3 className="text-2xl font-bold text-foreground mb-1">{value}</h3>
-          <p className="text-muted-foreground text-sm">{title}</p>
-        </CardContent>
-      </Card>
-    </motion.div>
-  );
-}
-
-export const revenueTrend = [
-  { month: "Jul", revenue: 12000 },
-  { month: "Ago", revenue: 13500 },
-  { month: "Set", revenue: 15800 },
-  { month: "Out", revenue: 18200 },
-  { month: "Nov", revenue: 21000 },
-  { month: "Dez", revenue: 24500 },
-  { month: "Jan", revenue: 28450 },
-];
-
-export const platformColors: Record<ContentPlatform, string> = {
-  [ContentPlatform.YOUTUBE]: "#FF0000",
-  [ContentPlatform.TIKTOK]: "#000000",
-  [ContentPlatform.INSTAGRAM]: "#E4405F",
-  [ContentPlatform.TWITCH]: "#9146FF",
-  [ContentPlatform.FACEBOOK]: "#1877F2",
-  [ContentPlatform.OTHER]: "#6B7280",
-};
-
-export const statusColors: Record<ContentStatus, string> = {
-  [ContentStatus.IDEA]: "#9CA3AF",
-  [ContentStatus.SCRIPT]: "#3B82F6",
-  [ContentStatus.RECORDING]: "#8B5CF6",
-  [ContentStatus.EDITING]: "#F59E0B",
-  [ContentStatus.READY]: "#10B981",
-  [ContentStatus.SCHEDULED]: "#6366F1",
-  [ContentStatus.PUBLISHED]: "#059669",
-  [ContentStatus.ARCHIVED]: "#6B7280",
-};
-
-export const taskStatusColors: Record<TaskStatus, string> = {
-  [TaskStatus.TODO]: "#9CA3AF",
-  [TaskStatus.IN_PROGRESS]: "#3B82F6",
-  [TaskStatus.BLOCKED]: "#EF4444",
-  [TaskStatus.DONE]: "#10B981",
-  [TaskStatus.ARCHIVED]: "#6B7280",
-};
+import StatCard from "./components/StatCard";
+import useDashboard from "./useDashboard";
 
 export default function DashboardPage() {
-  const [timeRange, setTimeRange] = useState("month");
-  const [selectedPlatform, setSelectedPlatform] = useState<string>("all");
-  const { session } = useSession();
-
-  const fadeInUp = {
-    initial: { opacity: 0, y: 20 },
-    animate: { opacity: 1, y: 0 },
-    transition: { duration: 0.5 },
-  };
-
-  const staggerChildren = {
-    animate: {
-      transition: {
-        staggerChildren: 0.1,
-      },
-    },
-  };
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(value);
-  };
-
-  const formatPercentage = (value: number) => {
-    return `${value > 0 ? "+" : ""}${value.toFixed(1)}%`;
-  };
+  const {
+    timeRange,
+    setTimeRange,
+    session,
+    revenueTrendMap,
+    platformColors,
+    statusColors,
+    fadeInUp,
+    staggerChildren,
+    formatCurrency,
+    formatPercentage,
+    dashboardStats,
+    revenueByPlatform,
+    contentPerformance,
+    upcomingContent,
+    recentActivity,
+    tasksByStatus,
+    STATUS_CONFIG,
+  } = useDashboard();
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-6">
@@ -190,7 +81,12 @@ export default function DashboardPage() {
               </p>
             </div>
             <div className="flex items-center gap-3 flex-wrap">
-              <Select value={timeRange} onValueChange={setTimeRange}>
+              <Select
+                value={timeRange}
+                onValueChange={(value) =>
+                  setTimeRange(value as "week" | "month" | "quarter")
+                }
+              >
                 <SelectTrigger className="w-35 md:w-45">
                   <Calendar className="h-4 w-4 mr-2" />
                   <SelectValue placeholder="Período" />
@@ -199,7 +95,6 @@ export default function DashboardPage() {
                   <SelectItem value="week">Última semana</SelectItem>
                   <SelectItem value="month">Este mês</SelectItem>
                   <SelectItem value="quarter">Este trimestre</SelectItem>
-                  <SelectItem value="year">Este ano</SelectItem>
                 </SelectContent>
               </Select>
               <Button className="bg-primary hover:bg-primary/90">
@@ -218,8 +113,8 @@ export default function DashboardPage() {
         >
           <StatCard
             title="Receita Total"
-            value={formatCurrency(dashboardStats.totalRevenue)}
-            change={formatPercentage(dashboardStats.revenueGrowth)}
+            value={formatCurrency(dashboardStats?.totalRevenue ?? 0)}
+            change={formatPercentage(dashboardStats?.revenueGrowth ?? 0)}
             isPositive={true}
             icon={DollarSign}
             iconColor="text-green-600 dark:text-green-400"
@@ -228,8 +123,8 @@ export default function DashboardPage() {
           />
           <StatCard
             title="Receita do Mês"
-            value={formatCurrency(dashboardStats.monthlyRevenue)}
-            change="+15.3% vs mês anterior"
+            value={formatCurrency(dashboardStats?.monthlyRevenue ?? 0)}
+            change={formatPercentage(dashboardStats?.revenueGrowth ?? 0)}
             isPositive={true}
             icon={TrendingUp}
             iconColor="text-blue-600 dark:text-blue-400"
@@ -238,8 +133,8 @@ export default function DashboardPage() {
           />
           <StatCard
             title="Conteúdos em Produção"
-            value={dashboardStats.activeContent.toString()}
-            change={`${dashboardStats.upcomingPublications} agendados`}
+            value={dashboardStats?.activeContent.toString() ?? "0"}
+            change={`${dashboardStats?.upcomingPublications ?? 0} agendados`}
             isPositive={true}
             icon={Video}
             iconColor="text-purple-600 dark:text-purple-400"
@@ -248,9 +143,9 @@ export default function DashboardPage() {
           />
           <StatCard
             title="Tarefas Pendentes"
-            value={dashboardStats.pendingTasks.toString()}
-            change={`${dashboardStats.taskCompletion}% completado`}
-            isPositive={dashboardStats.taskCompletion >= 70}
+            value={dashboardStats?.pendingTasks.toString() ?? "0"}
+            change={`${dashboardStats?.taskCompletion ?? 0}% completado`}
+            isPositive={(dashboardStats?.taskCompletion ?? 0) >= 70}
             icon={CheckCircle}
             iconColor="text-amber-600 dark:text-amber-400"
             iconBgColor="bg-amber-100 dark:bg-amber-900/30"
@@ -273,38 +168,19 @@ export default function DashboardPage() {
                         Desempenho de Receita
                       </CardTitle>
                       <CardDescription>
-                        Receita mensal e tendências
+                        Receita{" "}
+                        {timeRange === "week"
+                          ? "semanal"
+                          : timeRange === "month"
+                            ? "mensal"
+                            : "trimestral"}{" "}
+                        e tendências
                       </CardDescription>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Select
-                        value={selectedPlatform}
-                        onValueChange={setSelectedPlatform}
-                      >
-                        <SelectTrigger className="w-60">
-                          <Filter className="h-4 w-4" />
-                          <SelectValue placeholder="Plataforma" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">Todas plataformas</SelectItem>
-                          <SelectItem value="youtube">YouTube</SelectItem>
-                          <SelectItem value="tiktok">TikTok</SelectItem>
-                          <SelectItem value="instagram">Instagram</SelectItem>
-                          <SelectItem value="twitch">Twitch</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-10 w-10"
-                      >
-                        <Download className="h-4 w-4" />
-                      </Button>
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <RevenueChart data={revenueTrend} />
+                  <RevenueChart data={revenueTrendMap} timeRange={timeRange} />
                 </CardContent>
               </Card>
             </motion.div>
@@ -336,8 +212,11 @@ export default function DashboardPage() {
                           <div
                             className="w-10 h-10 rounded-lg flex items-center justify-center"
                             style={{
-                              backgroundColor: `${platformColors[content.platform]}20`,
-                              color: platformColors[content.platform],
+                              backgroundColor: `${platformColors[content.platform as ContentPlatform]}20`,
+                              color:
+                                platformColors[
+                                  content.platform as ContentPlatform
+                                ],
                             }}
                           >
                             {content.platform === ContentPlatform.YOUTUBE &&
@@ -360,9 +239,15 @@ export default function DashboardPage() {
                                 variant="outline"
                                 className="text-xs"
                                 style={{
-                                  backgroundColor: `${statusColors[content.status]}15`,
-                                  borderColor: statusColors[content.status],
-                                  color: statusColors[content.status],
+                                  backgroundColor: `${statusColors[content.status as ContentStatus]}15`,
+                                  borderColor:
+                                    statusColors[
+                                      content.status as ContentStatus
+                                    ],
+                                  color:
+                                    statusColors[
+                                      content.status as ContentStatus
+                                    ],
                                 }}
                               >
                                 {content.status}
@@ -415,14 +300,16 @@ export default function DashboardPage() {
                           <div
                             className="w-8 h-8 rounded-full flex items-center justify-center"
                             style={{
-                              backgroundColor: `${platformColors[content.platform]}20`,
+                              backgroundColor: `${platformColors[content.platform as ContentPlatform]}20`,
                             }}
                           >
                             <div
                               className="w-2 h-2 rounded-full"
                               style={{
                                 backgroundColor:
-                                  platformColors[content.platform],
+                                  platformColors[
+                                    content.platform as ContentPlatform
+                                  ],
                               }}
                             />
                           </div>
@@ -443,9 +330,11 @@ export default function DashboardPage() {
                             variant="outline"
                             className="text-xs"
                             style={{
-                              backgroundColor: `${statusColors[content.status]}15`,
-                              borderColor: statusColors[content.status],
-                              color: statusColors[content.status],
+                              backgroundColor: `${statusColors[content.status as ContentStatus]}15`,
+                              borderColor:
+                                statusColors[content.status as ContentStatus],
+                              color:
+                                statusColors[content.status as ContentStatus],
                             }}
                           >
                             {content.status}
@@ -472,12 +361,20 @@ export default function DashboardPage() {
                     <Target className="h-5 w-5 text-primary" />
                     Receita por Plataforma
                   </CardTitle>
-                  <CardDescription>Distribuição deste mês</CardDescription>
+                  <CardDescription>
+                    Distribuição em{" "}
+                    {timeRange === "week"
+                      ? "semana"
+                      : timeRange === "month"
+                        ? "mês"
+                        : "trimestre"}
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <PlatformDistribution
                     data={revenueByPlatform}
                     platformColors={platformColors}
+                    timeRange={timeRange}
                   />
                 </CardContent>
               </Card>
@@ -522,88 +419,97 @@ export default function DashboardPage() {
                 </div>
               </div>
             </CardHeader>
+
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {[
-                  {
-                    status: "Pendente",
-                    tasks: 4,
-                    color: "bg-gray-100 dark:bg-gray-800",
-                    textColor: "text-gray-600 dark:text-gray-300",
-                  },
-                  {
-                    status: "Em Progresso",
-                    tasks: 5,
-                    color: "bg-blue-100 dark:bg-blue-900/30",
-                    textColor: "text-blue-600 dark:text-blue-400",
-                  },
-                  {
-                    status: "Revisão",
-                    tasks: 3,
-                    color: "bg-amber-100 dark:bg-amber-900/30",
-                    textColor: "text-amber-600 dark:text-amber-400",
-                  },
-                ].map((column, colIndex) => (
-                  <motion.div
-                    key={column.status}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: colIndex * 0.1 }}
-                    className="space-y-3"
-                  >
-                    <div className={`p-3 rounded-lg ${column.color}`}>
-                      <div className="flex items-center justify-between">
-                        <span className={`font-medium ${column.textColor}`}>
-                          {column.status}
-                        </span>
-                        <Badge variant="secondary" className={column.textColor}>
-                          {column.tasks}
-                        </Badge>
-                      </div>
-                    </div>
-                    <div className="space-y-3">
-                      {Array.from({ length: column.tasks }).map(
-                        (_, taskIndex) => (
-                          <motion.div
-                            key={taskIndex}
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{
-                              delay: colIndex * 0.1 + taskIndex * 0.05,
-                            }}
-                            whileHover={{ y: -2 }}
-                            className="p-4 rounded-lg border hover:shadow-sm transition-all cursor-pointer bg-card"
-                          >
-                            <div className="flex items-start justify-between mb-2">
-                              <h4 className="font-medium text-foreground">
-                                Tarefa {colIndex + 1}.{taskIndex + 1}
-                              </h4>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-6 w-6"
-                              >
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </div>
-                            <p className="text-sm text-muted-foreground mb-3">
-                              Descrição da tarefa aqui...
-                            </p>
-                            <div className="flex items-center justify-between text-xs text-muted-foreground">
-                              <div className="flex items-center gap-2">
-                                <Clock className="h-3 w-3" />
-                                <span>Vence em 2 dias</span>
+                {Object.entries(tasksByStatus).map(
+                  ([status, tasks], colIndex) => {
+                    const config =
+                      STATUS_CONFIG[status as keyof typeof STATUS_CONFIG];
+
+                    if (!config) return null;
+
+                    return (
+                      <motion.div
+                        key={status}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: colIndex * 0.1 }}
+                        className="space-y-3"
+                      >
+                        {/* Header da coluna */}
+                        <div className={`p-3 rounded-lg ${config.color}`}>
+                          <div className="flex items-center justify-between">
+                            <span className={`font-medium ${config.textColor}`}>
+                              {config.label}
+                            </span>
+                            <Badge
+                              variant="secondary"
+                              className={config.textColor}
+                            >
+                              {tasks.length}
+                            </Badge>
+                          </div>
+                        </div>
+
+                        {/* Tarefas */}
+                        <div className="space-y-3">
+                          {tasks.map((task, taskIndex) => (
+                            <motion.div
+                              key={task.id}
+                              initial={{ opacity: 0, scale: 0.95 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              transition={{
+                                delay: colIndex * 0.1 + taskIndex * 0.05,
+                              }}
+                              whileHover={{ y: -2 }}
+                              className="p-4 rounded-lg border hover:shadow-sm transition-all cursor-pointer bg-card"
+                            >
+                              <div className="flex items-start justify-between mb-2">
+                                <h4 className="font-medium text-foreground">
+                                  {task.title}
+                                </h4>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6"
+                                >
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
                               </div>
-                              <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
-                                <Users className="h-3 w-3 text-primary" />
+
+                              {task.content_item && (
+                                <p className="text-sm text-muted-foreground mb-3">
+                                  {task.content_item.title}
+                                </p>
+                              )}
+
+                              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                                <div className="flex items-center gap-2">
+                                  <Clock className="h-3 w-3" />
+                                  <span>
+                                    {task.due_date
+                                      ? `Vence em ${new Date(task.due_date).toLocaleDateString("pt-BR")}`
+                                      : "Sem prazo"}
+                                  </span>
+                                </div>
+
+                                {task.assigned_to && (
+                                  <div
+                                    className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center"
+                                    title={task.assigned_to.name}
+                                  >
+                                    <Users className="h-3 w-3 text-primary" />
+                                  </div>
+                                )}
                               </div>
-                            </div>
-                          </motion.div>
-                        ),
-                      )}
-                    </div>
-                  </motion.div>
-                ))}
+                            </motion.div>
+                          ))}
+                        </div>
+                      </motion.div>
+                    );
+                  },
+                )}
               </div>
             </CardContent>
           </Card>

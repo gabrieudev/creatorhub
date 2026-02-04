@@ -1,5 +1,5 @@
 import { Progress } from "@/components/ui/progress";
-import { ContentPlatform } from "../types";
+import { ContentPlatform } from "@/shared/enums";
 import { motion } from "framer-motion";
 import { useTheme } from "next-themes";
 
@@ -11,11 +11,13 @@ interface PlatformDistributionProps {
     growth: number;
   }>;
   platformColors: Record<ContentPlatform, string>;
+  timeRange: "week" | "month" | "quarter";
 }
 
 export default function PlatformDistribution({
   data,
   platformColors,
+  timeRange,
 }: PlatformDistributionProps) {
   const { theme } = useTheme();
   const isDark = theme === "dark";
@@ -112,7 +114,14 @@ export default function PlatformDistribution({
       ))}
       <div className="pt-4 border-t border-border">
         <div className="flex justify-between text-sm">
-          <span className="text-muted-foreground">Total este mês</span>
+          <span className="text-muted-foreground">
+            Total em{" "}
+            {timeRange === "week"
+              ? "semana"
+              : timeRange === "month"
+                ? "mês"
+                : "trimestre"}
+          </span>
           <span className="font-semibold text-foreground">
             R${" "}
             {data

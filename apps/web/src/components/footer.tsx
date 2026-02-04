@@ -16,16 +16,16 @@ export function Footer() {
               Planeje, produza, monetize e colabore em um só lugar.
             </p>
             <div className="flex space-x-4">
-              <a href="#" className="hover:text-white transition-colors">
+              <a href="#">
                 <Facebook className="h-5 w-5" />
               </a>
-              <a href="#" className="hover:text-white transition-colors">
+              <a href="#">
                 <Twitter className="h-5 w-5" />
               </a>
-              <a href="#" className="hover:text-white transition-colors">
+              <a href="#">
                 <Instagram className="h-5 w-5" />
               </a>
-              <a href="#" className="hover:text-white transition-colors">
+              <a href="#">
                 <Linkedin className="h-5 w-5" />
               </a>
             </div>

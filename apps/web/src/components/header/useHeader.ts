@@ -46,8 +46,8 @@ export default function useHeader() {
   const [organizationsLimit, setOrganizationsLimit] = useState(5);
   const organizations = useOrganizations().data || [];
 
-  function useOrganizations(): ReturnType<typeof useQuery<Organization[]>> {
-    return useQuery({
+  function useOrganizations() {
+    return useQuery<Organization[]>({
       queryKey: ["organizations"],
       queryFn: async () => {
         const { data } = await api.get("/organizations");

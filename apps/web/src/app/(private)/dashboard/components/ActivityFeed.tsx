@@ -8,7 +8,6 @@ import {
   MessageSquare,
   Video,
 } from "lucide-react";
-import type { RecentActivity } from "../types";
 
 interface ActivityFeedProps {
   activities: RecentActivity[];
