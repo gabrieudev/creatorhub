@@ -307,6 +307,7 @@ export default function useDashboard() {
         setTags([]);
         toast.success("Conteúdo criado com sucesso!");
         setOpenContentModal(false);
+        refetchContentPerformance();
       },
       onError: (error) => {
         toast.error(
@@ -453,17 +454,22 @@ export default function useDashboard() {
       },
     }).data || [];
 
-  const contentPerformance =
+  const { data: contentPerformance = [], refetch: refetchContentPerformance } =
     useQuery<ContentPerformance[]>({
       queryKey: ["contentPerformance", organizationId],
-      enabled: !!organizationId,
+      enabled: false, // 👈 não executa automaticamente
       queryFn: async () => {
         const { data } = await api.get("/content-performance", {
-          params: { organizationId, limit: 10, orderBy: "revenue", page: 1 },
+          params: {
+            organizationId,
+            limit: 10,
+            orderBy: "revenue",
+            page: 1,
+          },
         });
         return data;
       },
-    }).data || [];
+    });
 
   const upcomingContent =
     useQuery<UpcomingContent[]>({
