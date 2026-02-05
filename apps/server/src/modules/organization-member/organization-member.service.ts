@@ -1,37 +1,22 @@
+import { isUniqueViolation, parse } from "@/lib/utils";
 import { ZodError } from "zod";
+import {
+  BadRequestError,
+  ConflictError,
+  ForbiddenError,
+  NotFoundError,
+} from "../../lib/errors";
 import {
   createOrganizationMemberSchema,
   updateOrganizationMemberSchema,
-  type CreateOrganizationMemberInput,
   type UpdateOrganizationMemberInput,
 } from "./organization-member.dto";
 import { OrganizationMemberRepository } from "./organization-member.repository";
-import {
-  NotFoundError,
-  ConflictError,
-  BadRequestError,
-  ForbiddenError,
-} from "../../lib/errors";
-
-function isUniqueViolation(err: any) {
-  if (!err) return false;
-  const code = err.code ?? err?.cause?.code ?? err?.original?.code;
-  if (code === "23505") return true;
-  if (err?.constraint || err?.meta?.constraint) return true;
-  return false;
-}
 
 export const OrganizationMemberService = {
   async create(organizationId: string, input: unknown, actorUserId?: string) {
-    let data: CreateOrganizationMemberInput;
-    try {
-      data = createOrganizationMemberSchema.parse(input);
-    } catch (err) {
-      if (err instanceof ZodError) throw err;
-      throw new BadRequestError("Dados inválidos");
-    }
+    const data = parse(createOrganizationMemberSchema, input);
 
-    // Authorization: bootstrapping vs normal behavior
     if (actorUserId) {
       const actorMembership =
         await OrganizationMemberRepository.findByOrgAndUser(
@@ -107,13 +92,7 @@ export const OrganizationMemberService = {
     input: unknown,
     actorUserId?: string,
   ) {
-    let data: UpdateOrganizationMemberInput;
-    try {
-      data = updateOrganizationMemberSchema.parse(input);
-    } catch (err) {
-      if (err instanceof ZodError) throw err;
-      throw new BadRequestError("Dados inválidos");
-    }
+    const data = parse(updateOrganizationMemberSchema, input);
 
     const existing = await OrganizationMemberRepository.findByOrgAndUser(
       organizationId,

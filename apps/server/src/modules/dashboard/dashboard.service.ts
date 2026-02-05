@@ -1,5 +1,6 @@
-import { ZodError } from "zod";
-import { BadRequestError, UnauthorizedError } from "../../lib/errors";
+import { parse } from "@/lib/utils";
+import { UnauthorizedError } from "../../lib/errors";
+import { OrganizationMemberRepository } from "../organization-member/organization-member.repository";
 import {
   contentPerformanceQuerySchema,
   pendingTasksQuerySchema,
@@ -9,7 +10,6 @@ import {
   upcomingContentQuerySchema,
 } from "./dashboard.dto";
 import { DashboardRepository } from "./dashboard.repository";
-import { OrganizationMemberRepository } from "../organization-member/organization-member.repository";
 
 export const DashboardService = {
   async getDashboardStats(organizationId: string, userId: string) {
@@ -27,15 +27,7 @@ export const DashboardService = {
   },
 
   async getRevenueByPlatform(query: unknown, userId: string) {
-    let data = null;
-    try {
-      data = revenueByPlatformQuerySchema.parse(query);
-    } catch (err) {
-      if (err instanceof ZodError) {
-        throw new BadRequestError("Dados de consulta inválidos");
-      }
-      throw err;
-    }
+    const data = parse(revenueByPlatformQuerySchema, query);
 
     const orgMember = await OrganizationMemberRepository.findByOrgAndUser(
       data.organizationId,
@@ -54,15 +46,7 @@ export const DashboardService = {
   },
 
   async getContentPerformance(query: unknown, userId: string) {
-    let data = null;
-    try {
-      data = contentPerformanceQuerySchema.parse(query);
-    } catch (err) {
-      if (err instanceof ZodError) {
-        throw new BadRequestError("Dados de consulta inválidos");
-      }
-      throw err;
-    }
+    const data = parse(contentPerformanceQuerySchema, query);
 
     const orgMember = await OrganizationMemberRepository.findByOrgAndUser(
       data.organizationId,
@@ -83,15 +67,7 @@ export const DashboardService = {
   },
 
   async getUpcomingContent(query: unknown, userId: string) {
-    let data = null;
-    try {
-      data = upcomingContentQuerySchema.parse(query);
-    } catch (err) {
-      if (err instanceof ZodError) {
-        throw new BadRequestError("Dados de consulta inválidos");
-      }
-      throw err;
-    }
+    const data = parse(upcomingContentQuerySchema, query);
 
     const orgMember = await OrganizationMemberRepository.findByOrgAndUser(
       data.organizationId,
@@ -112,15 +88,7 @@ export const DashboardService = {
   },
 
   async getPendingTasks(query: unknown, userId: string) {
-    let data = null;
-    try {
-      data = pendingTasksQuerySchema.parse(query);
-    } catch (err) {
-      if (err instanceof ZodError) {
-        throw new BadRequestError("Dados de consulta inválidos");
-      }
-      throw err;
-    }
+    const data = parse(pendingTasksQuerySchema, query);
 
     const orgMember = await OrganizationMemberRepository.findByOrgAndUser(
       data.organizationId,
@@ -155,15 +123,7 @@ export const DashboardService = {
   },
 
   async getRecentActivity(query: unknown, userId: string) {
-    let data = null;
-    try {
-      data = recentActivityQuerySchema.parse(query);
-    } catch (err) {
-      if (err instanceof ZodError) {
-        throw new BadRequestError("Dados de consulta inválidos");
-      }
-      throw err;
-    }
+    const data = parse(recentActivityQuerySchema, query);
 
     const orgMember = await OrganizationMemberRepository.findByOrgAndUser(
       data.organizationId,
@@ -183,15 +143,7 @@ export const DashboardService = {
   },
 
   async getRevenueTrend(query: unknown, userId: string) {
-    let data = null;
-    try {
-      data = revenueTrendQuerySchema.parse(query);
-    } catch (err) {
-      if (err instanceof ZodError) {
-        throw new BadRequestError("Dados de consulta inválidos");
-      }
-      throw err;
-    }
+    const data = parse(revenueTrendQuerySchema, query);
 
     const orgMember = await OrganizationMemberRepository.findByOrgAndUser(
       data.organizationId,

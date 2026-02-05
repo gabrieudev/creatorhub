@@ -1,20 +1,15 @@
-import { ZodError } from "zod";
-import { inArray, sql } from "drizzle-orm";
+import { isUniqueViolation, parse, slugify } from "@/lib/utils";
 import { db } from "@CreatorHub/db";
 import {
-  organizationsInApp,
-  rolesInApp,
   organizationMembersInApp,
-  rolePermissionsInApp,
+  organizationsInApp,
   permissionsInApp,
+  rolePermissionsInApp,
+  rolesInApp,
 } from "@CreatorHub/db/schema/schema";
-import { onboardingSchema, type OnboardingInput } from "./onboarding.dto";
-import {
-  BadRequestError,
-  ConflictError,
-  ForbiddenError,
-} from "../../lib/errors";
-import { isUniqueViolation, slugify } from "@/lib/utils";
+import { inArray, sql } from "drizzle-orm";
+import { ConflictError, ForbiddenError } from "../../lib/errors";
+import { onboardingSchema } from "./onboarding.dto";
 
 const MAX_SLUG_ATTEMPTS = 6;
 
@@ -24,13 +19,7 @@ export const OnboardingService = {
     input: unknown,
     actorUserId?: string,
   ) {
-    let data: OnboardingInput;
-    try {
-      data = onboardingSchema.parse(input);
-    } catch (err) {
-      if (err instanceof ZodError) throw err;
-      throw new BadRequestError("Invalid payload");
-    }
+    const data = parse(onboardingSchema, input);
 
     // se houver sessão, só permite criar org para o próprio usuário
     if (actorUserId && actorUserId !== userId) {

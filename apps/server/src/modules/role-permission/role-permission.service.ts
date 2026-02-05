@@ -13,7 +13,7 @@ import {
   BadRequestError,
   ForbiddenError,
 } from "../../lib/errors";
-import { isUniqueViolation } from "@/lib/utils";
+import { isUniqueViolation, parse } from "@/lib/utils";
 
 export const RolePermissionService = {
   async listByRole(
@@ -37,13 +37,7 @@ export const RolePermissionService = {
   },
 
   async create(roleId: string, input: unknown, actorUserId?: string) {
-    let data: CreateRolePermissionInput;
-    try {
-      data = createRolePermissionSchema.parse(input);
-    } catch (err) {
-      if (err instanceof ZodError) throw err;
-      throw new BadRequestError("Dados inválidos");
-    }
+    const data = parse(createRolePermissionSchema, input);
 
     // verifica se a role existe
     const role = await RoleRepository.findById(roleId);

@@ -14,7 +14,7 @@ import {
   ForbiddenError,
 } from "../../lib/errors";
 import { OrganizationMemberRepository } from "../organization-member/organization-member.repository";
-import { isUniqueViolation } from "@/lib/utils";
+import { isUniqueViolation, parse } from "@/lib/utils";
 
 export const RoleService = {
   async listByOrganization(
@@ -34,13 +34,7 @@ export const RoleService = {
   },
 
   async create(organizationId: string, input: unknown, actorUserId?: string) {
-    let data: CreateRoleInput;
-    try {
-      data = createRoleSchema.parse(input);
-    } catch (err) {
-      if (err instanceof ZodError) throw err;
-      throw new BadRequestError("Dados inválidos");
-    }
+    const data = parse(createRoleSchema, input);
 
     // somente owners podem criar roles (a menos que actorUserId seja omitido para o sistema)
     if (actorUserId) {
@@ -50,7 +44,9 @@ export const RoleService = {
       );
 
       if (!actor || !actor.isOwner)
-        throw new ForbiddenError("Somente proprietários da organização podem criar roles");
+        throw new ForbiddenError(
+          "Somente proprietários da organização podem criar roles",
+        );
     }
 
     // verificação de unicidade
@@ -93,7 +89,9 @@ export const RoleService = {
         actorUserId,
       );
       if (!actor || !actor.isOwner)
-        throw new ForbiddenError("Somente proprietários da organização podem criar roles");
+        throw new ForbiddenError(
+          "Somente proprietários da organização podem criar roles",
+        );
     }
 
     // detectar duplicatas no payload (case-insensitive)
@@ -101,7 +99,9 @@ export const RoleService = {
     for (const it of items) {
       const low = it.name.toLowerCase();
       if (lowerMap.has(low)) {
-        throw new BadRequestError(`Nome de função duplicado no payload: ${it.name}`);
+        throw new BadRequestError(
+          `Nome de função duplicado no payload: ${it.name}`,
+        );
       }
       lowerMap.set(low, 1);
     }
@@ -120,7 +120,8 @@ export const RoleService = {
       const created = await RoleRepository.createMany(organizationId, items);
       return created;
     } catch (err: any) {
-      if (isUniqueViolation(err)) throw new ConflictError("Conflito de nome de função");
+      if (isUniqueViolation(err))
+        throw new ConflictError("Conflito de nome de função");
       throw err;
     }
   },
@@ -132,13 +133,7 @@ export const RoleService = {
   },
 
   async update(roleId: string, input: unknown, actorUserId?: string) {
-    let data: UpdateRoleInput;
-    try {
-      data = updateRoleSchema.parse(input);
-    } catch (err) {
-      if (err instanceof ZodError) throw err;
-      throw new BadRequestError("Dados inválidos");
-    }
+    const data = parse(updateRoleSchema, input);
 
     const existing = await RoleRepository.findById(roleId);
     if (!existing) throw new NotFoundError("Role não encontrada");
@@ -150,7 +145,9 @@ export const RoleService = {
         actorUserId,
       );
       if (!actor || !actor.isOwner)
-        throw new ForbiddenError("Somente proprietários da organização podem atualizar funções");
+        throw new ForbiddenError(
+          "Somente proprietários da organização podem atualizar funções",
+        );
     }
 
     // Se o nome mudou, garantir unicidade
@@ -171,7 +168,8 @@ export const RoleService = {
     }
 
     const updated = await RoleRepository.update(roleId, data);
-    if (!updated) throw new NotFoundError("Função não encontrada após atualização");
+    if (!updated)
+      throw new NotFoundError("Função não encontrada após atualização");
     return updated;
   },
 
@@ -186,7 +184,9 @@ export const RoleService = {
         actorUserId,
       );
       if (!actor || !actor.isOwner)
-        throw new ForbiddenError("Somente proprietários da organização podem deletar funções");
+        throw new ForbiddenError(
+          "Somente proprietários da organização podem deletar funções",
+        );
     }
 
     if (existing.isBuiltin)
