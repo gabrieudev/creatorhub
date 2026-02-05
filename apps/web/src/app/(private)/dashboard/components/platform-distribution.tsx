@@ -1,6 +1,14 @@
 import { Progress } from "@/components/ui/progress";
 import { ContentPlatform } from "@/shared/enums";
 import { motion } from "framer-motion";
+import {
+  Facebook,
+  Globe,
+  Instagram,
+  Music,
+  Twitch,
+  Youtube,
+} from "lucide-react";
 import { useTheme } from "next-themes";
 
 interface PlatformDistributionProps {
@@ -25,17 +33,17 @@ export default function PlatformDistribution({
   const getPlatformIcon = (platform: ContentPlatform) => {
     switch (platform) {
       case ContentPlatform.YOUTUBE:
-        return "▶️";
+        return <Youtube size={16} />;
       case ContentPlatform.TIKTOK:
-        return "🎵";
+        return <Music size={16} />;
       case ContentPlatform.INSTAGRAM:
-        return "📸";
+        return <Instagram size={16} />;
       case ContentPlatform.TWITCH:
-        return "🎮";
+        return <Twitch size={16} />;
       case ContentPlatform.FACEBOOK:
-        return "👥";
+        return <Facebook size={16} />;
       default:
-        return "🌐";
+        return <Globe size={16} />;
     }
   };
 

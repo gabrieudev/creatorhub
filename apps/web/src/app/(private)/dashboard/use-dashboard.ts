@@ -3,44 +3,14 @@
 import api from "@/lib/api";
 import { useSession } from "@/providers/auth-provider";
 import { ContentPlatform, ContentStatus, TaskStatus } from "@/shared/enums";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { useForm } from "react-hook-form";
-import { toast } from "sonner";
-import z from "zod";
 
 export interface RevenueTrend {
   period: string;
   revenue: number;
   growth: number | null;
 }
-
-// Schema de validação
-const contentFormSchema = z.object({
-  title: z
-    .string()
-    .min(1, "Título é obrigatório")
-    .max(200, "Título muito longo"),
-  description: z.string().optional(),
-  contentType: z.string().optional(),
-  platform: z.enum(ContentPlatform),
-  status: z.enum(ContentStatus),
-  visibility: z.enum(["private", "public", "team"]),
-  scheduledAt: z.date().optional(),
-  publishedAt: z.date().optional(),
-  estimatedDurationSeconds: z.number().min(0).optional(),
-  metadata: z
-    .object({
-      tags: z.array(z.string()).optional(),
-      category: z.string().optional(),
-      targetAudience: z.string().optional(),
-      notes: z.string().optional(),
-    })
-    .optional(),
-});
-
-type ContentFormData = z.infer<typeof contentFormSchema>;
 
 const monthMap: Record<string, string> = {
   "01": "Jan",
@@ -56,26 +26,6 @@ const monthMap: Record<string, string> = {
   "11": "Nov",
   "12": "Dez",
 };
-
-const contentPlatform = [
-  "youtube",
-  "tiktok",
-  "instagram",
-  "twitch",
-  "facebook",
-  "other",
-] as const;
-
-const contentStatus = [
-  "idea",
-  "roteiro",
-  "gravacao",
-  "edicao",
-  "pronto",
-  "agendado",
-  "publicado",
-  "arquivado",
-] as const;
 
 function useSelectedOrganization() {
   const [organizationId, setOrganizationId] = useState<string | null>(() =>
@@ -104,12 +54,41 @@ export default function useDashboard() {
   );
   const { session } = useSession();
   const organizationId = useSelectedOrganization();
-  const [contentModalActiveTab, setContentModalActiveTab] = useState("basic");
-  const [tags, setTags] = useState<string[]>([]);
-  const [tagInput, setTagInput] = useState("");
-  const [openContentModal, setOpenContentModal] = useState(false);
-  const { mutate: createContentItem, isPending: isCreatingContentItem } =
-    useCreateContentItem();
+  const [openNewContentModal, setOpenNewContentModal] = useState(false);
+
+  function normalizeBackendPeriod(period: string, range: string) {
+    if (!period) return period;
+
+    switch (range) {
+      case "month": {
+        const m = period.match(/(\d{4})-(\d{2})/);
+        if (m) return `${m[1]}-${m[2]}`;
+        return period.slice(0, 7);
+      }
+      case "day": {
+        const d = new Date(period);
+        if (!Number.isNaN(d.getTime())) {
+          const y = d.getFullYear();
+          const mm = String(d.getMonth() + 1).padStart(2, "0");
+          const dd = String(d.getDate()).padStart(2, "0");
+          return `${y}-${mm}-${dd}`;
+        }
+        return period;
+      }
+      case "week": {
+        const m = period.match(/(\d{4})-(\d{2})/);
+        if (m) return `${m[1]}-${m[2]}`;
+        return period;
+      }
+      case "quarter": {
+        const mQ = period.match(/(\d{4})-?Q?([1-4])/i);
+        if (mQ) return `${mQ[1]}-Q${mQ[2]}`;
+        return period;
+      }
+      default:
+        return period;
+    }
+  }
 
   function addDays(d: Date, days: number) {
     const c = new Date(d);
@@ -149,40 +128,6 @@ export default function useDashboard() {
       }
       default:
         return `${y}-${mm}`;
-    }
-  }
-
-  function normalizeBackendPeriod(period: string, range: string) {
-    if (!period) return period;
-
-    switch (range) {
-      case "month": {
-        const m = period.match(/(\d{4})-(\d{2})/);
-        if (m) return `${m[1]}-${m[2]}`;
-        return period.slice(0, 7);
-      }
-      case "day": {
-        const d = new Date(period);
-        if (!Number.isNaN(d.getTime())) {
-          const y = d.getFullYear();
-          const mm = String(d.getMonth() + 1).padStart(2, "0");
-          const dd = String(d.getDate()).padStart(2, "0");
-          return `${y}-${mm}-${dd}`;
-        }
-        return period;
-      }
-      case "week": {
-        const m = period.match(/(\d{4})-(\d{2})/);
-        if (m) return `${m[1]}-${m[2]}`;
-        return period;
-      }
-      case "quarter": {
-        const mQ = period.match(/(\d{4})-?Q?([1-4])/i);
-        if (mQ) return `${mQ[1]}-Q${mQ[2]}`;
-        return period;
-      }
-      default:
-        return period;
     }
   }
 
@@ -238,128 +183,6 @@ export default function useDashboard() {
 
     return keys;
   }
-
-  function useCreateContentItem() {
-    const queryClient = useQueryClient();
-
-    return useMutation({
-      mutationFn: async (data: ContentFormData) => {
-        const res = await api.post(
-          `/organizations/${organizationId}/content-items`,
-          data,
-        );
-        return res.data;
-      },
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ["content-items"] });
-      },
-    });
-  }
-
-  const form = useForm<ContentFormData>({
-    resolver: zodResolver(contentFormSchema),
-    defaultValues: {
-      title: "",
-      description: "",
-      contentType: "",
-      platform: ContentPlatform.YOUTUBE,
-      status: ContentStatus.IDEA,
-      visibility: "private",
-      estimatedDurationSeconds: undefined,
-      metadata: {
-        tags: [],
-        category: "",
-        targetAudience: "",
-        notes: "",
-      },
-    },
-  });
-
-  const watchPlatform = form.watch("platform");
-  const watchStatus = form.watch("status");
-
-  const handleAddTag = () => {
-    if (tagInput.trim() && !tags.includes(tagInput.trim())) {
-      const newTags = [...tags, tagInput.trim()];
-      setTags(newTags);
-      form.setValue("metadata.tags", newTags);
-      setTagInput("");
-    }
-  };
-
-  const handleRemoveTag = (tagToRemove: string) => {
-    const newTags = tags.filter((tag) => tag !== tagToRemove);
-    setTags(newTags);
-    form.setValue("metadata.tags", newTags);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      handleAddTag();
-    }
-  };
-
-  const contentOnSubmit = (data: ContentFormData) => {
-    createContentItem(data, {
-      onSuccess: () => {
-        form.reset();
-        setTags([]);
-        toast.success("Conteúdo criado com sucesso!");
-        setOpenContentModal(false);
-        refetchContentPerformance();
-      },
-      onError: (error) => {
-        toast.error(
-          error?.message || "Erro ao criar conteúdo. Tente novamente.",
-        );
-      },
-    });
-  };
-
-  // Animações
-  const modalVariants = {
-    hidden: { opacity: 0, scale: 0.95, y: 20 },
-    visible: {
-      opacity: 1,
-      scale: 1,
-      y: 0,
-      transition: {
-        type: "spring",
-        damping: 25,
-        stiffness: 300,
-      },
-    },
-    exit: {
-      opacity: 0,
-      scale: 0.95,
-      y: -20,
-      transition: { duration: 0.2 },
-    },
-  };
-
-  const tabContentVariants = {
-    hidden: { opacity: 0, x: 20 },
-    visible: {
-      opacity: 1,
-      x: 0,
-      transition: {
-        duration: 0.3,
-        ease: "easeInOut",
-      },
-    },
-    exit: {
-      opacity: 0,
-      x: -20,
-      transition: { duration: 0.2 },
-    },
-  };
-
-  const visibilityOptions = [
-    { value: "private", label: "Privado" },
-    { value: "public", label: "Público" },
-    { value: "team", label: "Time" },
-  ] as const;
 
   const periodCount = useMemo(() => {
     switch (timeRange) {
@@ -454,23 +277,6 @@ export default function useDashboard() {
       },
     }).data || [];
 
-  const { data: contentPerformance = [], refetch: refetchContentPerformance } =
-    useQuery<ContentPerformance[]>({
-      queryKey: ["contentPerformance", organizationId],
-      enabled: false, // 👈 não executa automaticamente
-      queryFn: async () => {
-        const { data } = await api.get("/content-performance", {
-          params: {
-            organizationId,
-            limit: 10,
-            orderBy: "revenue",
-            page: 1,
-          },
-        });
-        return data;
-      },
-    });
-
   const upcomingContent =
     useQuery<UpcomingContent[]>({
       queryKey: ["upcomingContent", organizationId],
@@ -533,6 +339,22 @@ export default function useDashboard() {
       return data;
     },
   }).data;
+
+  const { data: contentPerformance = [] } = useQuery<ContentPerformance[]>({
+    queryKey: ["contentPerformance", organizationId],
+    enabled: false,
+    queryFn: async () => {
+      const { data } = await api.get("/content-performance", {
+        params: {
+          organizationId,
+          limit: 10,
+          orderBy: "revenue",
+          page: 1,
+        },
+      });
+      return data;
+    },
+  });
 
   const platformColors: Record<ContentPlatform, string> = {
     [ContentPlatform.YOUTUBE]: "#FF0000",
@@ -638,8 +460,6 @@ export default function useDashboard() {
     formatPercentage,
     dashboardStats,
     revenueByPlatform,
-    contentPerformance,
-    upcomingContent,
     pendingTasks,
     recentActivity,
     revenueTrend,
@@ -647,26 +467,9 @@ export default function useDashboard() {
     contentByStatus,
     STATUS_CONFIG,
     tasksByStatus,
-    contentFormSchema,
-    form,
-    watchPlatform,
-    watchStatus,
-    tags,
-    tagInput,
-    setTagInput,
-    handleAddTag,
-    handleRemoveTag,
-    handleKeyDown,
-    contentOnSubmit,
-    contentModalActiveTab,
-    setContentModalActiveTab,
-    modalVariants,
-    tabContentVariants,
-    visibilityOptions,
-    contentPlatform,
-    contentStatus,
-    isCreatingContentItem,
-    openContentModal,
-    setOpenContentModal,
+    upcomingContent,
+    contentPerformance,
+    openNewContentModal,
+    setOpenNewContentModal,
   };
 }
