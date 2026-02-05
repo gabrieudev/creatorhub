@@ -114,13 +114,13 @@ export function NewTaskModal({
     <Dialog open={openNewTaskModal} onOpenChange={setOpenNewTaskModal}>
       <DialogTrigger asChild>
         {trigger || (
-          <Button className="gap-2">
+          <Button className="gap-2 cursor-pointer">
             <Plus className="w-4 h-4" />
             Nova Tarefa
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[550px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-137.5 max-h-[90vh] overflow-y-auto">
         <motion.div
           initial="hidden"
           animate="visible"
@@ -128,7 +128,7 @@ export function NewTaskModal({
           variants={modalVariants as Variants}
         >
           <DialogHeader>
-            <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-red-600 bg-clip-text text-transparent">
+            <DialogTitle className="text-2xl font-bold bg-linear-to-r from-blue-600 to-red-600 bg-clip-text text-transparent">
               Criar Nova Tarefa
             </DialogTitle>
             <DialogDescription>
@@ -190,7 +190,7 @@ export function NewTaskModal({
                             <FormControl>
                               <Textarea
                                 placeholder="Descreva a tarefa em detalhes..."
-                                className="min-h-[80px] transition-all duration-300 focus:ring-2 focus:ring-blue-500"
+                                className="min-h-20 transition-all duration-300 focus:ring-2 focus:ring-blue-500"
                                 {...field}
                               />
                             </FormControl>
@@ -324,7 +324,7 @@ export function NewTaskModal({
                                       variant="outline"
                                       role="combobox"
                                       className={cn(
-                                        "w-full justify-between",
+                                        "w-full justify-between cursor-pointer",
                                         !field.value && "text-muted-foreground",
                                       )}
                                     >
@@ -347,13 +347,13 @@ export function NewTaskModal({
                                     </Button>
                                   </FormControl>
                                 </CommandPopoverTrigger>
-                                <CommandPopoverContent className="w-[400px] p-0">
+                                <CommandPopoverContent className="w-100 p-0">
                                   <Command>
                                     <CommandInput placeholder="Buscar conteúdo..." />
                                     <CommandEmpty>
                                       Nenhum conteúdo encontrado.
                                     </CommandEmpty>
-                                    <CommandGroup className="max-h-[200px] overflow-y-auto">
+                                    <CommandGroup className="max-h-50 overflow-y-auto">
                                       {contentItems.map((item) => (
                                         <CommandItem
                                           key={item.id}
@@ -397,7 +397,7 @@ export function NewTaskModal({
                                   type="button"
                                   variant="ghost"
                                   size="sm"
-                                  className="mt-1 h-6 text-xs"
+                                  className="mt-1 h-6 text-xs cursor-pointer"
                                   onClick={() =>
                                     form.setValue("contentItemId", null)
                                   }
@@ -429,7 +429,7 @@ export function NewTaskModal({
                                       variant="outline"
                                       role="combobox"
                                       className={cn(
-                                        "w-full justify-between",
+                                        "w-full justify-between cursor-pointer",
                                         !field.value && "text-muted-foreground",
                                       )}
                                     >
@@ -464,13 +464,13 @@ export function NewTaskModal({
                                     </Button>
                                   </FormControl>
                                 </CommandPopoverTrigger>
-                                <CommandPopoverContent className="w-[400px] p-0">
+                                <CommandPopoverContent className="w-100 p-0">
                                   <Command>
                                     <CommandInput placeholder="Buscar membro..." />
                                     <CommandEmpty>
                                       Nenhum membro encontrado.
                                     </CommandEmpty>
-                                    <CommandGroup className="max-h-[200px] overflow-y-auto">
+                                    <CommandGroup className="max-h-50 overflow-y-auto">
                                       {organizationMembers.map((member) => (
                                         <CommandItem
                                           key={member.id}
@@ -524,7 +524,7 @@ export function NewTaskModal({
                                   type="button"
                                   variant="ghost"
                                   size="sm"
-                                  className="mt-1 h-6 text-xs"
+                                  className="mt-1 h-6 text-xs cursor-pointer"
                                   onClick={() =>
                                     form.setValue("assignedTo", null)
                                   }
@@ -560,7 +560,7 @@ export function NewTaskModal({
                                 type="button"
                                 variant="ghost"
                                 size="sm"
-                                className="h-6 text-xs self-start"
+                                className="h-6 text-xs self-start cursor-pointer"
                                 onClick={() => field.onChange(null)}
                               >
                                 Remover data
@@ -601,12 +601,12 @@ export function NewTaskModal({
                             type="button"
                             variant="secondary"
                             onClick={handleAddTag}
-                            className="transition-all duration-300 hover:scale-105"
+                            className="transition-all duration-300 hover:scale-105 cursor-pointer"
                           >
                             Adicionar
                           </Button>
                         </div>
-                        <div className="flex flex-wrap gap-2 min-h-[40px]">
+                        <div className="flex flex-wrap gap-2 min-h-10">
                           {tags.map((tag) => (
                             <Badge
                               key={tag}
@@ -670,7 +670,7 @@ export function NewTaskModal({
                             <FormControl>
                               <Textarea
                                 placeholder="Notas e observações internas..."
-                                className="min-h-[80px] transition-all duration-300 focus:ring-2 focus:ring-blue-500"
+                                className="min-h-20 transition-all duration-300 focus:ring-2 focus:ring-blue-500"
                                 {...field}
                               />
                             </FormControl>
@@ -696,7 +696,7 @@ export function NewTaskModal({
                       <Button
                         type="button"
                         variant="outline"
-                        className="transition-all duration-300 hover:scale-105"
+                        className="transition-all duration-300 hover:scale-105 cursor-pointer"
                         disabled={loading}
                       >
                         Cancelar
@@ -708,7 +708,7 @@ export function NewTaskModal({
                           type="button"
                           variant="secondary"
                           onClick={() => setActiveTab("details")}
-                          className="transition-all duration-300 hover:scale-105"
+                          className="transition-all duration-300 hover:scale-105 cursor-pointer"
                           disabled={loading}
                         >
                           Voltar
@@ -719,7 +719,7 @@ export function NewTaskModal({
                           type="button"
                           variant="secondary"
                           onClick={() => setActiveTab("advanced")}
-                          className="transition-all duration-300 hover:scale-105"
+                          className="transition-all duration-300 hover:scale-105 cursor-pointer"
                           disabled={loading}
                         >
                           Configurações Avançadas

@@ -70,7 +70,7 @@ export function NewContentModal({
   return (
     <Dialog open={openContentModal} onOpenChange={setOpenContentModal}>
       <DialogTrigger asChild>
-        <Button>Novo Conteúdo</Button>
+        <Button className="cursor-pointer">Novo Conteúdo</Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-150 max-h-[90vh] overflow-y-auto">
         <motion.div
@@ -364,7 +364,7 @@ export function NewContentModal({
                                     type="button"
                                     onClick={() => field.onChange(option.value)}
                                     className={cn(
-                                      "flex flex-col items-center gap-2 p-4 rounded-lg border transition-all duration-300",
+                                      "flex flex-col items-center gap-2 p-4 rounded-lg border transition-all duration-300 cursor-pointer",
                                       field.value === option.value
                                         ? "border-purple-500 bg-purple-50 dark:bg-purple-950"
                                         : "border-gray-200 hover:border-purple-300 hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-900",
@@ -416,7 +416,7 @@ export function NewContentModal({
                             type="button"
                             variant="secondary"
                             onClick={handleAddTag}
-                            className="transition-all duration-300 hover:scale-105"
+                            className="transition-all duration-300 hover:scale-105 cursor-pointer"
                           >
                             Adicionar
                           </Button>
@@ -500,7 +500,7 @@ export function NewContentModal({
                 >
                   <DialogFooter className="flex flex-col sm:flex-row gap-2 mt-6 pt-6 border-t">
                     <DialogClose className="transition-all duration-300 hover:scale-105">
-                      <Button variant="outline">Cancelar</Button>
+                      <Button variant="outline" className="cursor-pointer">Cancelar</Button>
                     </DialogClose>
                     <div className="flex gap-2">
                       {contentModalActiveTab !== "basic" && (
@@ -513,7 +513,7 @@ export function NewContentModal({
                             if (contentModalActiveTab === "advanced")
                               setContentModalActiveTab("schedule");
                           }}
-                          className="transition-all duration-300 hover:scale-105"
+                          className="transition-all duration-300 hover:scale-105 cursor-pointer"
                         >
                           Voltar
                         </Button>
@@ -528,14 +528,14 @@ export function NewContentModal({
                             if (contentModalActiveTab === "schedule")
                               setContentModalActiveTab("advanced");
                           }}
-                          className="transition-all duration-300 hover:scale-105"
+                          className="transition-all duration-300 hover:scale-105 cursor-pointer"
                         >
                           Próximo
                         </Button>
                       ) : null}
                       <Button
                         type="submit"
-                        className="bg-linear-to-r from-red-600 to-blue-600 hover:from-blue-700 hover:to-red-700 transition-all duration-300 hover:scale-105 text-white"
+                        className="bg-linear-to-r from-red-600 to-blue-600 hover:from-blue-700 hover:to-red-700 transition-all duration-300 hover:scale-105 text-white cursor-pointer"
                         disabled={isCreatingContentItem}
                       >
                         {isCreatingContentItem ? (

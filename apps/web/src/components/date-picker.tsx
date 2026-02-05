@@ -29,7 +29,7 @@ export function DatePicker({ control, name }: DatePickerProps) {
               <Button
                 variant="outline"
                 id={name}
-                className="justify-start font-normal w-full"
+                className="justify-start font-normal w-full cursor-pointer"
               >
                 {field.value ? (
                   format(field.value, "PPP", { locale: ptBR })

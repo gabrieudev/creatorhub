@@ -433,7 +433,7 @@ export default function SignInPage() {
                               >
                                 <Button
                                   type="submit"
-                                  className="w-full bg-linear-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg"
+                                  className="w-full bg-linear-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-3 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg cursor-pointer"
                                   disabled={
                                     !state.canSubmit || state.isSubmitting
                                   }
@@ -482,7 +482,7 @@ export default function SignInPage() {
                               <Button
                                 type="button"
                                 variant="outline"
-                                className={`w-full h-12 ${provider.color} ${provider.bgColor} border transition-all duration-200 hover:shadow-md`}
+                                className={`w-full h-12 ${provider.color} ${provider.bgColor} border transition-all duration-200 hover:shadow-md cursor-pointer`}
                                 onClick={() => handleSocialLogin(provider.name)}
                               >
                                 <span className="flex items-center justify-center gap-3">
@@ -509,7 +509,7 @@ export default function SignInPage() {
                           <div className="text-center">
                             <Button
                               variant="ghost"
-                              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 cursor-pointer"
                               onClick={() => setLoginMethod("email")}
                             >
                               Entrar com email e senha

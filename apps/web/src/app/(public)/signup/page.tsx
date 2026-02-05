@@ -335,7 +335,7 @@ export default function SignUpPage() {
           variant="ghost"
           size="sm"
           onClick={() => router.push("/")}
-          className="text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+          className="text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer"
         >
           <ChevronLeft className="h-4 w-4 mr-1" />
           Voltar para Home
@@ -489,7 +489,7 @@ export default function SignUpPage() {
                             key={provider.name}
                             type="button"
                             variant="outline"
-                            className={`${provider.color} border h-10 transition-all duration-200`}
+                            className={`${provider.color} border h-10 transition-all duration-200 cursor-pointer`}
                             onClick={() =>
                               console.log(`${provider.name} sign up clicked`)
                             }
@@ -691,7 +691,7 @@ export default function SignUpPage() {
                           <div className="pt-4">
                             <Button
                               type="submit"
-                              className="w-full bg-linear-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-3 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                              className="w-full bg-linear-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-3 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 cursor-pointer"
                               disabled={!state.canSubmit || state.isSubmitting}
                               aria-disabled={
                                 !state.canSubmit || state.isSubmitting
@@ -724,7 +724,7 @@ export default function SignUpPage() {
                         variant="ghost"
                         size="sm"
                         onClick={handleBackToStep1}
-                        className="text-gray-600 dark:text-slate-400"
+                        className="text-gray-600 dark:text-slate-400 cursor-pointer"
                       >
                         <ChevronLeft className="h-4 w-4 mr-1" />
                         Voltar
@@ -1006,7 +1006,7 @@ export default function SignUpPage() {
                           <div className="pt-6">
                             <Button
                               type="submit"
-                              className="w-full bg-linear-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold py-3 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                              className="w-full bg-linear-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold py-3 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 cursor-pointer"
                               disabled={!state.canSubmit || state.isSubmitting}
                               aria-disabled={
                                 !state.canSubmit || state.isSubmitting

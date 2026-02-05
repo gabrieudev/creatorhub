@@ -285,7 +285,7 @@ export default function DashboardPage() {
                         </motion.div>
                       ))}
                     </div>
-                    <Button variant="ghost" className="w-full mt-4">
+                    <Button variant="ghost" className="w-full mt-4 cursor-pointer">
                       Ver todos os conteúdos
                     </Button>
                   </CardContent>
@@ -359,7 +359,7 @@ export default function DashboardPage() {
                         </motion.div>
                       ))}
                     </div>
-                    <Button variant="ghost" className="w-full mt-4">
+                    <Button variant="ghost" className="w-full mt-4 cursor-pointer">
                       Ver calendário completo
                     </Button>
                   </CardContent>
@@ -432,7 +432,7 @@ export default function DashboardPage() {
                     openNewTaskModal={openNewTaskModal}
                     refetchPendingTasks={refetchPendingTasks}
                   />
-                  <Button variant="ghost" size="sm">
+                  <Button variant="ghost" size="sm" className="cursor-pointer">
                     Ver todas
                   </Button>
                 </div>
@@ -498,7 +498,7 @@ export default function DashboardPage() {
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-6 w-6"
+                                    className="h-6 w-6 cursor-pointer"
                                   >
                                     <MoreVertical className="h-4 w-4" />
                                   </Button>

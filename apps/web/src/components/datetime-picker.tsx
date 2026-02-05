@@ -46,7 +46,7 @@ export function DatePickerTime({
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
-                  className="w-32 justify-between font-normal"
+                  className="w-32 justify-between font-normal cursor-pointer"
                 >
                   {field.value
                     ? format(field.value, "PPP", { locale: ptBR })

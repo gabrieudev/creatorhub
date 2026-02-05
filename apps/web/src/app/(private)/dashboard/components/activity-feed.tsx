@@ -76,7 +76,7 @@ export default function ActivityFeed({ activities }: ActivityFeedProps) {
         transition={{ delay: 0.5 }}
         className="p-4"
       >
-        <button className="w-full text-center py-2 text-sm text-primary hover:text-primary/80 font-medium">
+        <button className="w-full text-center py-2 text-sm text-primary hover:text-primary/80 font-medium cursor-pointer">
           Ver todas as atividades →
         </button>
       </motion.div>

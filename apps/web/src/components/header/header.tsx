@@ -211,7 +211,7 @@ export default function Header() {
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="ghost"
-                    className="hidden lg:flex items-center gap-2 px-3 hover:bg-accent/50 mr-4"
+                    className="hidden lg:flex items-center gap-2 px-3 hover:bg-accent/50 mr-4 cursor-pointer"
                   >
                     <Building className="h-4 w-4 text-primary" />
                     <div className="flex flex-col items-start">
@@ -240,7 +240,7 @@ export default function Header() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-6 px-2 text-xs"
+                      className="h-6 px-2 text-xs cursor-pointer"
                       asChild
                     >
                       <Link href="#">
@@ -351,7 +351,7 @@ export default function Header() {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                className="w-full text-xs"
+                                className="w-full text-xs cursor-pointer"
                                 onClick={loadMoreOrganizations}
                               >
                                 Carregar mais organizações
@@ -403,7 +403,7 @@ export default function Header() {
                         <Button
                           variant="ghost"
                           className={cn(
-                            "gap-2 px-3 transition-all duration-300",
+                            "gap-2 px-3 transition-all duration-300 cursor-pointer",
                             pathname.startsWith(item.href)
                               ? "bg-linear-to-r from-primary/10 to-primary/5 border border-primary/20 shadow-sm"
                               : "hover:bg-accent",
@@ -459,7 +459,7 @@ export default function Header() {
                       variant="ghost"
                       asChild
                       className={cn(
-                        "gap-2 px-3 relative transition-all duration-300",
+                        "gap-2 px-3 relative transition-all duration-300 cursor-pointer",
                         pathname === item.href
                           ? "bg-linear-to-r from-primary/10 to-primary/5 border border-primary/20 shadow-sm"
                           : "hover:bg-accent",
@@ -510,7 +510,7 @@ export default function Header() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="relative"
+                      className="relative cursor-pointer"
                       onClick={() => setSearchOpen(true)}
                     >
                       <Search className="h-5 w-5" />
@@ -528,7 +528,7 @@ export default function Header() {
                 onOpenChange={setQuickActionOpen}
               >
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="relative">
+                  <Button variant="ghost" size="icon" className="relative cursor-pointer">
                     <Sparkles className="h-5 w-5" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -561,7 +561,7 @@ export default function Header() {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <div className="relative">
-                    <Button variant="ghost" size="icon" className="relative">
+                    <Button variant="ghost" size="icon" className="relative cursor-pointer">
                       <Bell className="h-5 w-5" />
                       {notifications > 0 && (
                         <motion.span
@@ -584,7 +584,7 @@ export default function Header() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-auto p-0 text-xs"
+                      className="h-auto p-0 text-xs cursor-pointer"
                     >
                       Marcar todas como lidas
                     </Button>
@@ -649,6 +649,7 @@ export default function Header() {
                       variant="ghost"
                       size="icon"
                       onClick={toggleDarkMode}
+                      className="cursor-pointer"
                     >
                       {darkMode ? (
                         <Sun className="h-5 w-5" />
@@ -758,7 +759,7 @@ export default function Header() {
                                     <Button
                                       variant="ghost"
                                       size="sm"
-                                      className="h-7 px-2 text-xs"
+                                      className="h-7 px-2 text-xs cursor-pointer"
                                     >
                                       Trocar
                                     </Button>
@@ -818,7 +819,7 @@ export default function Header() {
                                           <Button
                                             variant="ghost"
                                             size="sm"
-                                            className="w-full text-xs"
+                                            className="w-full text-xs cursor-pointer"
                                             asChild
                                           >
                                             <Link href="#">
@@ -993,7 +994,7 @@ export default function Header() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-auto p-0 text-xs"
+                          className="h-auto p-0 text-xs cursor-pointer"
                         >
                           v2.4.1
                         </Button>
@@ -1161,7 +1162,7 @@ export default function Header() {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  className="w-full text-xs"
+                                  className="w-full text-xs cursor-pointer"
                                   onClick={loadMoreOrganizations}
                                 >
                                   Carregar mais organizações
@@ -1261,7 +1262,7 @@ export default function Header() {
                       <div className="space-y-2">
                         <Button
                           variant="ghost"
-                          className="w-full justify-start gap-3"
+                          className="w-full justify-start gap-3 cursor-pointer"
                           onClick={() => setMobileMenuOpen(false)}
                         >
                           <Settings className="h-5 w-5" />
@@ -1269,7 +1270,7 @@ export default function Header() {
                         </Button>
                         <Button
                           variant="ghost"
-                          className="w-full justify-start gap-3"
+                          className="w-full justify-start gap-3 cursor-pointer"
                           onClick={() => setMobileMenuOpen(false)}
                         >
                           <HelpCircle className="h-5 w-5" />
@@ -1277,7 +1278,7 @@ export default function Header() {
                         </Button>
                         <Button
                           variant="ghost"
-                          className="w-full justify-start gap-3 text-destructive"
+                          className="w-full justify-start gap-3 text-destructive cursor-pointer"
                           onClick={signOut}
                         >
                           <LogOut className="h-5 w-5" />
