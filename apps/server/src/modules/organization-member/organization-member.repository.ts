@@ -1,5 +1,9 @@
 import { db } from "@CreatorHub/db";
-import { organizationMembersInApp } from "@CreatorHub/db/schema/schema";
+import {
+  organizationMembersInApp,
+  rolesInApp,
+  usersInApp,
+} from "@CreatorHub/db/schema/schema";
 import { eq, and, sql, desc } from "drizzle-orm";
 import type {
   CreateOrganizationMemberInput,
@@ -26,24 +30,68 @@ export const OrganizationMemberRepository = {
   },
 
   async findById(id: string) {
-    const [row] = await db
-      .select()
+    const rows = await db
+      .select({
+        member: organizationMembersInApp,
+        user: {
+          id: usersInApp.id,
+          name: usersInApp.name,
+          email: usersInApp.email,
+          image: usersInApp.image,
+        },
+        role: {
+          id: rolesInApp.id,
+          name: rolesInApp.name,
+        },
+      })
       .from(organizationMembersInApp)
-      .where(eq(organizationMembersInApp.id, id));
-    return row ?? null;
+      .innerJoin(usersInApp, eq(usersInApp.id, organizationMembersInApp.userId))
+      .leftJoin(rolesInApp, eq(rolesInApp.id, organizationMembersInApp.roleId))
+      .where(eq(organizationMembersInApp.id, id))
+      .orderBy(desc(organizationMembersInApp.joinedAt));
+
+    return (
+      rows.map(({ member, user, role }) => ({
+        ...member,
+        user,
+        role: role?.id ? role : null,
+      }))[0] ?? null
+    );
   },
 
   async findByOrgAndUser(organizationId: string, userId: string) {
-    const [row] = await db
-      .select()
+    const rows = await db
+      .select({
+        member: organizationMembersInApp,
+        user: {
+          id: usersInApp.id,
+          name: usersInApp.name,
+          email: usersInApp.email,
+          image: usersInApp.image,
+        },
+        role: {
+          id: rolesInApp.id,
+          name: rolesInApp.name,
+        },
+      })
       .from(organizationMembersInApp)
+      .innerJoin(usersInApp, eq(usersInApp.id, organizationMembersInApp.userId))
+      .leftJoin(rolesInApp, eq(rolesInApp.id, organizationMembersInApp.roleId))
       .where(
         and(
           eq(organizationMembersInApp.organizationId, organizationId),
           eq(organizationMembersInApp.userId, userId),
         ),
-      );
-    return row ?? null;
+      )
+      .orderBy(desc(organizationMembersInApp.joinedAt));
+
+    return (
+      rows.map(({ member, user, role }) => ({
+        ...member,
+        user,
+        role: role?.id ? role : null,
+      }))[0] ?? null
+    );
   },
 
   async updateByOrgAndUser(
@@ -107,15 +155,36 @@ export const OrganizationMemberRepository = {
   },
 
   async findOwners(organizationId: string) {
-    return db
-      .select()
+    const rows = await db
+      .select({
+        member: organizationMembersInApp,
+        user: {
+          id: usersInApp.id,
+          name: usersInApp.name,
+          email: usersInApp.email,
+          image: usersInApp.image,
+        },
+        role: {
+          id: rolesInApp.id,
+          name: rolesInApp.name,
+        },
+      })
       .from(organizationMembersInApp)
+      .innerJoin(usersInApp, eq(usersInApp.id, organizationMembersInApp.userId))
+      .leftJoin(rolesInApp, eq(rolesInApp.id, organizationMembersInApp.roleId))
       .where(
         and(
           eq(organizationMembersInApp.organizationId, organizationId),
           eq(organizationMembersInApp.isOwner, true),
         ),
-      );
+      )
+      .orderBy(desc(organizationMembersInApp.joinedAt));
+
+    return rows.map(({ member, user, role }) => ({
+      ...member,
+      user,
+      role: role?.id ? role : null,
+    }));
   },
 
   async countOwners(organizationId: string) {
@@ -139,23 +208,65 @@ export const OrganizationMemberRepository = {
   ) {
     const limit = options?.limit ?? 50;
     const offset = options?.offset ?? 0;
-    return db
-      .select()
+
+    const rows = await db
+      .select({
+        member: organizationMembersInApp,
+        user: {
+          id: usersInApp.id,
+          name: usersInApp.name,
+          email: usersInApp.email,
+          image: usersInApp.image,
+        },
+        role: {
+          id: rolesInApp.id,
+          name: rolesInApp.name,
+        },
+      })
       .from(organizationMembersInApp)
+      .innerJoin(usersInApp, eq(usersInApp.id, organizationMembersInApp.userId))
+      .leftJoin(rolesInApp, eq(rolesInApp.id, organizationMembersInApp.roleId))
       .where(eq(organizationMembersInApp.organizationId, organizationId))
+      .orderBy(desc(organizationMembersInApp.joinedAt))
       .limit(limit)
-      .offset(offset)
-      .orderBy(desc(organizationMembersInApp.joinedAt));
+      .offset(offset);
+
+    return rows.map(({ member, user, role }) => ({
+      ...member,
+      user,
+      role: role?.id ? role : null,
+    }));
   },
 
   async list(options?: { limit?: number; offset?: number }) {
     const limit = options?.limit ?? 50;
     const offset = options?.offset ?? 0;
-    return db
-      .select()
+
+    const rows = await db
+      .select({
+        member: organizationMembersInApp,
+        user: {
+          id: usersInApp.id,
+          name: usersInApp.name,
+          email: usersInApp.email,
+          image: usersInApp.image,
+        },
+        role: {
+          id: rolesInApp.id,
+          name: rolesInApp.name,
+        },
+      })
       .from(organizationMembersInApp)
+      .innerJoin(usersInApp, eq(usersInApp.id, organizationMembersInApp.userId))
+      .leftJoin(rolesInApp, eq(rolesInApp.id, organizationMembersInApp.roleId))
+      .orderBy(desc(organizationMembersInApp.joinedAt))
       .limit(limit)
-      .offset(offset)
-      .orderBy(desc(organizationMembersInApp.joinedAt));
+      .offset(offset);
+
+    return rows.map(({ member, user, role }) => ({
+      ...member,
+      user,
+      role: role?.id ? role : null,
+    }));
   },
 };

@@ -13,6 +13,7 @@ import { OrganizationMemberService } from "./organization-member.service";
 import { UnauthorizedError } from "@/lib/errors";
 
 const orgIdParam = z.object({ organizationId: z.string().uuid() });
+
 const orgUserParams = z.object({
   organizationId: z.string().uuid(),
   userId: z.string(),

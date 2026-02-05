@@ -23,13 +23,19 @@ export const OrganizationMemberService = {
           organizationId,
           actorUserId,
         );
+
+      if (!actorMembership) {
+        throw new ForbiddenError("Você não é membro desta organização");
+      }
+
       const members = await OrganizationMemberRepository.listByOrganization(
         organizationId,
         { limit: 1 },
       );
+
       const orgHasMembers = members.length > 0;
       if (orgHasMembers) {
-        if (!actorMembership || !actorMembership.isOwner) {
+        if (!actorMembership || !actorMembership?.isOwner) {
           throw new ForbiddenError(
             "Somente proprietários da organização podem adicionar membros",
           );
@@ -98,6 +104,7 @@ export const OrganizationMemberService = {
       organizationId,
       userId,
     );
+
     if (!existing)
       throw new NotFoundError("Membro da organização não encontrado");
 
@@ -107,7 +114,7 @@ export const OrganizationMemberService = {
           organizationId,
           actorUserId,
         );
-      if (!actorMembership || !actorMembership.isOwner) {
+      if (!actorMembership || !actorMembership?.isOwner) {
         throw new ForbiddenError(
           "Somente proprietários da organização podem atualizar membros",
         );
@@ -116,21 +123,21 @@ export const OrganizationMemberService = {
 
     if (
       (input as any).organizationId &&
-      (input as any).organizationId !== existing.organizationId
+      (input as any).organizationId !== existing?.organizationId
     ) {
       throw new BadRequestError(
         "Não é possível alterar o campo imutável 'organizationId'",
       );
     }
-    if ((input as any).userId && (input as any).userId !== existing.userId) {
+    if ((input as any).userId && (input as any).userId !== existing?.userId) {
       throw new BadRequestError(
         "Não é possível alterar o campo imutável 'userId'",
       );
     }
 
-    if (data.isOwner === true && !existing.isOwner) {
+    if (data.isOwner === true && !existing?.isOwner) {
       const owners = await OrganizationMemberRepository.findOwners(
-        existing.organizationId,
+        existing?.organizationId,
       );
       if (owners.length > 0) {
         throw new ConflictError("Organização já tem um proprietário");
@@ -165,16 +172,16 @@ export const OrganizationMemberService = {
           organizationId,
           actorUserId,
         );
-      if (!actorMembership || !actorMembership.isOwner) {
+      if (!actorMembership || !actorMembership?.isOwner) {
         throw new ForbiddenError(
           "Somente proprietários da organização podem remover membros",
         );
       }
     }
 
-    if (existing.isOwner) {
+    if (existing?.isOwner) {
       const ownerCount = await OrganizationMemberRepository.countOwners(
-        existing.organizationId,
+        existing?.organizationId,
       );
       if (ownerCount <= 1) {
         throw new ConflictError(
