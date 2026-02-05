@@ -44,6 +44,7 @@ import RevenueChart from "./components/revenue-chart";
 import StatCard from "./components/stat-card";
 import useDashboard from "./use-dashboard";
 import { NewContentModal } from "@/components/new-content-modal/new-content-modal";
+import { NewTaskModal } from "@/components/new-task-modal/new-task-modal";
 
 export default function DashboardPage() {
   const {
@@ -66,6 +67,10 @@ export default function DashboardPage() {
     contentPerformance,
     openNewContentModal,
     setOpenNewContentModal,
+    openNewTaskModal,
+    setOpenNewTaskModal,
+    organizationId,
+    refetchPendingTasks,
   } = useDashboard();
 
   return (
@@ -421,10 +426,12 @@ export default function DashboardPage() {
                   </CardDescription>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Nova Tarefa
-                  </Button>
+                  <NewTaskModal
+                    organizationId={organizationId}
+                    setOpenNewTaskModal={setOpenNewTaskModal}
+                    openNewTaskModal={openNewTaskModal}
+                    refetchPendingTasks={refetchPendingTasks}
+                  />
                   <Button variant="ghost" size="sm">
                     Ver todas
                   </Button>

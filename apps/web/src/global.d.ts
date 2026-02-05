@@ -20,13 +20,13 @@ declare global {
     id: string;
     name: string;
     email: string;
-    email_verified: boolean;
+    email_verified?: boolean;
     image?: string;
     last_signin_at?: string;
-    status: UserStatus;
-    created_at: string;
-    updated_at: string;
-    profile: Record<string, any>;
+    status?: UserStatus;
+    created_at?: string;
+    updated_at?: string;
+    profile?: Record<string, any>;
   }
 
   export interface ContentItem {
@@ -131,11 +131,13 @@ declare global {
     id: string;
     organization_id: string;
     user_id: string;
-    role_id?: string;
+    role_id: string | null;
     joined_at: string;
     is_owner: boolean;
     preferences: Record<string, any>;
     fl_active: boolean;
+    user: User;
+    role?: Role | null;
   }
 
   export interface Role {

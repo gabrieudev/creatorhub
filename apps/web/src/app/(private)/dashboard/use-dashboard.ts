@@ -55,6 +55,7 @@ export default function useDashboard() {
   const { session } = useSession();
   const organizationId = useSelectedOrganization();
   const [openNewContentModal, setOpenNewContentModal] = useState(false);
+  const [openNewTaskModal, setOpenNewTaskModal] = useState(false);
 
   function normalizeBackendPeriod(period: string, range: string) {
     if (!period) return period;
@@ -289,22 +290,23 @@ export default function useDashboard() {
       },
     }).data || [];
 
-  const pendingTasks =
-    useQuery<PendingTask[]>({
-      queryKey: ["pendingTasks", organizationId],
-      enabled: !!organizationId,
-      queryFn: async () => {
-        const { data } = await api.get("/pending-tasks", {
-          params: {
-            organizationId,
-            status: "todo,in_progress,blocked",
-            page: 1,
-            limit: 10,
-          },
-        });
-        return data;
-      },
-    }).data || [];
+  const { data: pendingTasks = [], refetch: refetchPendingTasks } = useQuery<
+    PendingTask[]
+  >({
+    queryKey: ["pendingTasks", organizationId],
+    enabled: !!organizationId,
+    queryFn: async () => {
+      const { data } = await api.get("/pending-tasks", {
+        params: {
+          organizationId,
+          status: "todo,in_progress,blocked",
+          page: 1,
+          limit: 10,
+        },
+      });
+      return data;
+    },
+  });
 
   const recentActivity =
     useQuery<RecentActivity[]>({
@@ -340,21 +342,22 @@ export default function useDashboard() {
     },
   }).data;
 
-  const { data: contentPerformance = [] } = useQuery<ContentPerformance[]>({
-    queryKey: ["contentPerformance", organizationId],
-    enabled: false,
-    queryFn: async () => {
-      const { data } = await api.get("/content-performance", {
-        params: {
-          organizationId,
-          limit: 10,
-          orderBy: "revenue",
-          page: 1,
-        },
-      });
-      return data;
-    },
-  });
+  const contentPerformance =
+    useQuery<ContentPerformance[]>({
+      queryKey: ["contentPerformance", organizationId],
+      enabled: !!organizationId,
+      queryFn: async () => {
+        const { data } = await api.get("/content-performance", {
+          params: {
+            organizationId,
+            limit: 10,
+            orderBy: "revenue",
+            page: 1,
+          },
+        });
+        return data;
+      },
+    }).data || [];
 
   const platformColors: Record<ContentPlatform, string> = {
     [ContentPlatform.YOUTUBE]: "#FF0000",
@@ -471,5 +474,9 @@ export default function useDashboard() {
     contentPerformance,
     openNewContentModal,
     setOpenNewContentModal,
+    openNewTaskModal,
+    setOpenNewTaskModal,
+    organizationId,
+    refetchPendingTasks,
   };
 }
