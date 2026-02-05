@@ -1,8 +1,8 @@
 "use client";
 
-import { PrivateRoutes } from "@/providers/private-routes";
-import Header from "@/components/header/header";
 import { Footer } from "@/components/footer";
+import Header from "@/components/header/header";
+import { PrivateRoutes } from "@/providers/private-routes";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
 
@@ -18,7 +18,7 @@ export default function PrivateLayout({
       <PrivateRoutes>
         <div className="grid grid-rows-[auto_1fr]">
           <Header />
-          {children}
+          <main>{children}</main>
           <Footer />
         </div>
       </PrivateRoutes>

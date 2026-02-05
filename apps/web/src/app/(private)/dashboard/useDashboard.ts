@@ -3,14 +3,79 @@
 import api from "@/lib/api";
 import { useSession } from "@/providers/auth-provider";
 import { ContentPlatform, ContentStatus, TaskStatus } from "@/shared/enums";
-import { useQuery } from "@tanstack/react-query";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+import z from "zod";
 
 export interface RevenueTrend {
   period: string;
   revenue: number;
   growth: number | null;
 }
+
+// Schema de validação
+const contentFormSchema = z.object({
+  title: z
+    .string()
+    .min(1, "Título é obrigatório")
+    .max(200, "Título muito longo"),
+  description: z.string().optional(),
+  contentType: z.string().optional(),
+  platform: z.enum(ContentPlatform),
+  status: z.enum(ContentStatus),
+  visibility: z.enum(["private", "public", "team"]),
+  scheduledAt: z.date().optional(),
+  publishedAt: z.date().optional(),
+  estimatedDurationSeconds: z.number().min(0).optional(),
+  metadata: z
+    .object({
+      tags: z.array(z.string()).optional(),
+      category: z.string().optional(),
+      targetAudience: z.string().optional(),
+      notes: z.string().optional(),
+    })
+    .optional(),
+});
+
+type ContentFormData = z.infer<typeof contentFormSchema>;
+
+const monthMap: Record<string, string> = {
+  "01": "Jan",
+  "02": "Fev",
+  "03": "Mar",
+  "04": "Abr",
+  "05": "Mai",
+  "06": "Jun",
+  "07": "Jul",
+  "08": "Ago",
+  "09": "Set",
+  "10": "Out",
+  "11": "Nov",
+  "12": "Dez",
+};
+
+const contentPlatform = [
+  "youtube",
+  "tiktok",
+  "instagram",
+  "twitch",
+  "facebook",
+  "other",
+] as const;
+
+const contentStatus = [
+  "idea",
+  "roteiro",
+  "gravacao",
+  "edicao",
+  "pronto",
+  "agendado",
+  "publicado",
+  "arquivado",
+] as const;
 
 function useSelectedOrganization() {
   const [organizationId, setOrganizationId] = useState<string | null>(() =>
@@ -33,152 +98,267 @@ function useSelectedOrganization() {
   return organizationId;
 }
 
-function addDays(d: Date, days: number) {
-  const c = new Date(d);
-  c.setDate(c.getDate() + days);
-  return c;
-}
-function addMonths(d: Date, months: number) {
-  const c = new Date(d);
-  c.setMonth(c.getMonth() + months);
-  return c;
-}
-function periodKeyForDate(date: Date, range: string) {
-  const y = date.getFullYear();
-  const mm = String(date.getMonth() + 1).padStart(2, "0");
-  const dd = String(date.getDate()).padStart(2, "0");
-
-  switch (range) {
-    case "day":
-      return `${y}-${mm}-${dd}`;
-    case "week": {
-      const d = new Date(
-        Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()),
-      );
-
-      d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
-      const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-      const weekNo = Math.ceil(
-        (((d as any) - (yearStart as any)) / 86400000 + 1) / 7,
-      );
-      return `${d.getUTCFullYear()}-${String(weekNo).padStart(2, "0")}`;
-    }
-    case "month":
-      return `${y}-${mm}`;
-    case "quarter": {
-      const q = Math.floor(date.getMonth() / 3) + 1;
-      return `${y}-Q${q}`;
-    }
-    default:
-      return `${y}-${mm}`;
-  }
-}
-
-function normalizeBackendPeriod(period: string, range: string) {
-  if (!period) return period;
-
-  switch (range) {
-    case "month": {
-      const m = period.match(/(\d{4})-(\d{2})/);
-      if (m) return `${m[1]}-${m[2]}`;
-      return period.slice(0, 7);
-    }
-    case "day": {
-      const d = new Date(period);
-      if (!Number.isNaN(d.getTime())) {
-        const y = d.getFullYear();
-        const mm = String(d.getMonth() + 1).padStart(2, "0");
-        const dd = String(d.getDate()).padStart(2, "0");
-        return `${y}-${mm}-${dd}`;
-      }
-      return period;
-    }
-    case "week": {
-      const m = period.match(/(\d{4})-(\d{2})/);
-      if (m) return `${m[1]}-${m[2]}`;
-      return period;
-    }
-    case "quarter": {
-      const mQ = period.match(/(\d{4})-?Q?([1-4])/i);
-      if (mQ) return `${mQ[1]}-Q${mQ[2]}`;
-      return period;
-    }
-    default:
-      return period;
-  }
-}
-
-function generatePeriodKeys(start: Date, end: Date, range: string) {
-  const keys: string[] = [];
-  const s = new Date(start);
-  const e = new Date(end);
-
-  if (range === "day") {
-    let cur = new Date(s);
-    while (cur <= e) {
-      keys.push(periodKeyForDate(cur, "day"));
-      cur = addDays(cur, 1);
-    }
-    return keys;
-  }
-
-  if (range === "week") {
-    let cur = new Date(s);
-    const day = cur.getDay();
-    const isoMonDelta = (day === 0 ? -6 : 1) - day;
-    cur = addDays(cur, isoMonDelta);
-    while (cur <= e) {
-      keys.push(periodKeyForDate(cur, "week"));
-      cur = addDays(cur, 7);
-    }
-    return keys;
-  }
-
-  if (range === "month") {
-    let cur = new Date(s.getFullYear(), s.getMonth(), 1);
-    const endMonth = new Date(e.getFullYear(), e.getMonth(), 1);
-    while (cur <= endMonth) {
-      keys.push(periodKeyForDate(cur, "month"));
-      cur = addMonths(cur, 1);
-    }
-    return keys;
-  }
-
-  if (range === "quarter") {
-    let cur = new Date(s.getFullYear(), Math.floor(s.getMonth() / 3) * 3, 1);
-    const endQ = new Date(e.getFullYear(), Math.floor(e.getMonth() / 3) * 3, 1);
-    while (cur <= endQ) {
-      keys.push(periodKeyForDate(cur, "quarter"));
-      cur = addMonths(cur, 3);
-    }
-    return keys;
-  }
-
-  return keys;
-}
-
-const monthMap: Record<string, string> = {
-  "01": "Jan",
-  "02": "Fev",
-  "03": "Mar",
-  "04": "Abr",
-  "05": "Mai",
-  "06": "Jun",
-  "07": "Jul",
-  "08": "Ago",
-  "09": "Set",
-  "10": "Out",
-  "11": "Nov",
-  "12": "Dez",
-};
-
 export default function useDashboard() {
   const [timeRange, setTimeRange] = useState<"week" | "month" | "quarter">(
     "month",
   );
   const { session } = useSession();
-
   const organizationId = useSelectedOrganization();
+  const [contentModalActiveTab, setContentModalActiveTab] = useState("basic");
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState("");
+  const [openContentModal, setOpenContentModal] = useState(false);
+  const { mutate: createContentItem, isPending: isCreatingContentItem } =
+    useCreateContentItem();
+
+  function addDays(d: Date, days: number) {
+    const c = new Date(d);
+    c.setDate(c.getDate() + days);
+    return c;
+  }
+  function addMonths(d: Date, months: number) {
+    const c = new Date(d);
+    c.setMonth(c.getMonth() + months);
+    return c;
+  }
+  function periodKeyForDate(date: Date, range: string) {
+    const y = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, "0");
+    const dd = String(date.getDate()).padStart(2, "0");
+
+    switch (range) {
+      case "day":
+        return `${y}-${mm}-${dd}`;
+      case "week": {
+        const d = new Date(
+          Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()),
+        );
+
+        d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+        const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+        const weekNo = Math.ceil(
+          (((d as any) - (yearStart as any)) / 86400000 + 1) / 7,
+        );
+        return `${d.getUTCFullYear()}-${String(weekNo).padStart(2, "0")}`;
+      }
+      case "month":
+        return `${y}-${mm}`;
+      case "quarter": {
+        const q = Math.floor(date.getMonth() / 3) + 1;
+        return `${y}-Q${q}`;
+      }
+      default:
+        return `${y}-${mm}`;
+    }
+  }
+
+  function normalizeBackendPeriod(period: string, range: string) {
+    if (!period) return period;
+
+    switch (range) {
+      case "month": {
+        const m = period.match(/(\d{4})-(\d{2})/);
+        if (m) return `${m[1]}-${m[2]}`;
+        return period.slice(0, 7);
+      }
+      case "day": {
+        const d = new Date(period);
+        if (!Number.isNaN(d.getTime())) {
+          const y = d.getFullYear();
+          const mm = String(d.getMonth() + 1).padStart(2, "0");
+          const dd = String(d.getDate()).padStart(2, "0");
+          return `${y}-${mm}-${dd}`;
+        }
+        return period;
+      }
+      case "week": {
+        const m = period.match(/(\d{4})-(\d{2})/);
+        if (m) return `${m[1]}-${m[2]}`;
+        return period;
+      }
+      case "quarter": {
+        const mQ = period.match(/(\d{4})-?Q?([1-4])/i);
+        if (mQ) return `${mQ[1]}-Q${mQ[2]}`;
+        return period;
+      }
+      default:
+        return period;
+    }
+  }
+
+  function generatePeriodKeys(start: Date, end: Date, range: string) {
+    const keys: string[] = [];
+    const s = new Date(start);
+    const e = new Date(end);
+
+    if (range === "day") {
+      let cur = new Date(s);
+      while (cur <= e) {
+        keys.push(periodKeyForDate(cur, "day"));
+        cur = addDays(cur, 1);
+      }
+      return keys;
+    }
+
+    if (range === "week") {
+      let cur = new Date(s);
+      const day = cur.getDay();
+      const isoMonDelta = (day === 0 ? -6 : 1) - day;
+      cur = addDays(cur, isoMonDelta);
+      while (cur <= e) {
+        keys.push(periodKeyForDate(cur, "week"));
+        cur = addDays(cur, 7);
+      }
+      return keys;
+    }
+
+    if (range === "month") {
+      let cur = new Date(s.getFullYear(), s.getMonth(), 1);
+      const endMonth = new Date(e.getFullYear(), e.getMonth(), 1);
+      while (cur <= endMonth) {
+        keys.push(periodKeyForDate(cur, "month"));
+        cur = addMonths(cur, 1);
+      }
+      return keys;
+    }
+
+    if (range === "quarter") {
+      let cur = new Date(s.getFullYear(), Math.floor(s.getMonth() / 3) * 3, 1);
+      const endQ = new Date(
+        e.getFullYear(),
+        Math.floor(e.getMonth() / 3) * 3,
+        1,
+      );
+      while (cur <= endQ) {
+        keys.push(periodKeyForDate(cur, "quarter"));
+        cur = addMonths(cur, 3);
+      }
+      return keys;
+    }
+
+    return keys;
+  }
+
+  function useCreateContentItem() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+      mutationFn: async (data: ContentFormData) => {
+        const res = await api.post(
+          `/organizations/${organizationId}/content-items`,
+          data,
+        );
+        return res.data;
+      },
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["content-items"] });
+      },
+    });
+  }
+
+  const form = useForm<ContentFormData>({
+    resolver: zodResolver(contentFormSchema),
+    defaultValues: {
+      title: "",
+      description: "",
+      contentType: "",
+      platform: ContentPlatform.YOUTUBE,
+      status: ContentStatus.IDEA,
+      visibility: "private",
+      estimatedDurationSeconds: undefined,
+      metadata: {
+        tags: [],
+        category: "",
+        targetAudience: "",
+        notes: "",
+      },
+    },
+  });
+
+  const watchPlatform = form.watch("platform");
+  const watchStatus = form.watch("status");
+
+  const handleAddTag = () => {
+    if (tagInput.trim() && !tags.includes(tagInput.trim())) {
+      const newTags = [...tags, tagInput.trim()];
+      setTags(newTags);
+      form.setValue("metadata.tags", newTags);
+      setTagInput("");
+    }
+  };
+
+  const handleRemoveTag = (tagToRemove: string) => {
+    const newTags = tags.filter((tag) => tag !== tagToRemove);
+    setTags(newTags);
+    form.setValue("metadata.tags", newTags);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleAddTag();
+    }
+  };
+
+  const contentOnSubmit = (data: ContentFormData) => {
+    createContentItem(data, {
+      onSuccess: () => {
+        form.reset();
+        setTags([]);
+        toast.success("Conteúdo criado com sucesso!");
+        setOpenContentModal(false);
+      },
+      onError: (error) => {
+        toast.error(
+          error?.message || "Erro ao criar conteúdo. Tente novamente.",
+        );
+      },
+    });
+  };
+
+  // Animações
+  const modalVariants = {
+    hidden: { opacity: 0, scale: 0.95, y: 20 },
+    visible: {
+      opacity: 1,
+      scale: 1,
+      y: 0,
+      transition: {
+        type: "spring",
+        damping: 25,
+        stiffness: 300,
+      },
+    },
+    exit: {
+      opacity: 0,
+      scale: 0.95,
+      y: -20,
+      transition: { duration: 0.2 },
+    },
+  };
+
+  const tabContentVariants = {
+    hidden: { opacity: 0, x: 20 },
+    visible: {
+      opacity: 1,
+      x: 0,
+      transition: {
+        duration: 0.3,
+        ease: "easeInOut",
+      },
+    },
+    exit: {
+      opacity: 0,
+      x: -20,
+      transition: { duration: 0.2 },
+    },
+  };
+
+  const visibilityOptions = [
+    { value: "private", label: "Privado" },
+    { value: "public", label: "Público" },
+    { value: "team", label: "Time" },
+  ] as const;
 
   const periodCount = useMemo(() => {
     switch (timeRange) {
@@ -461,5 +641,26 @@ export default function useDashboard() {
     contentByStatus,
     STATUS_CONFIG,
     tasksByStatus,
+    contentFormSchema,
+    form,
+    watchPlatform,
+    watchStatus,
+    tags,
+    tagInput,
+    setTagInput,
+    handleAddTag,
+    handleRemoveTag,
+    handleKeyDown,
+    contentOnSubmit,
+    contentModalActiveTab,
+    setContentModalActiveTab,
+    modalVariants,
+    tabContentVariants,
+    visibilityOptions,
+    contentPlatform,
+    contentStatus,
+    isCreatingContentItem,
+    openContentModal,
+    setOpenContentModal,
   };
 }
