@@ -421,96 +421,104 @@ export default function DashboardPage() {
             </CardHeader>
 
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {Object.entries(tasksByStatus).map(
-                  ([status, tasks], colIndex) => {
-                    const config =
-                      STATUS_CONFIG[status as keyof typeof STATUS_CONFIG];
+              {Object.values(tasksByStatus).flat().length === 0 ? (
+                <div className="p-6 text-center text-sm text-muted-foreground">
+                  Nenhuma tarefa encontrada. Tente adicionar uma nova tarefa!
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {Object.entries(tasksByStatus).map(
+                    ([status, tasks], colIndex) => {
+                      const config =
+                        STATUS_CONFIG[status as keyof typeof STATUS_CONFIG];
 
-                    if (!config) return null;
+                      if (!config) return null;
 
-                    return (
-                      <motion.div
-                        key={status}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: colIndex * 0.1 }}
-                        className="space-y-3"
-                      >
-                        {/* Header da coluna */}
-                        <div className={`p-3 rounded-lg ${config.color}`}>
-                          <div className="flex items-center justify-between">
-                            <span className={`font-medium ${config.textColor}`}>
-                              {config.label}
-                            </span>
-                            <Badge
-                              variant="secondary"
-                              className={config.textColor}
-                            >
-                              {tasks.length}
-                            </Badge>
+                      return (
+                        <motion.div
+                          key={status}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: colIndex * 0.1 }}
+                          className="space-y-3"
+                        >
+                          {/* Header da coluna */}
+                          <div className={`p-3 rounded-lg ${config.color}`}>
+                            <div className="flex items-center justify-between">
+                              <span
+                                className={`font-medium ${config.textColor}`}
+                              >
+                                {config.label}
+                              </span>
+                              <Badge
+                                variant="secondary"
+                                className={config.textColor}
+                              >
+                                {tasks.length}
+                              </Badge>
+                            </div>
                           </div>
-                        </div>
 
-                        {/* Tarefas */}
-                        <div className="space-y-3">
-                          {tasks.map((task, taskIndex) => (
-                            <motion.div
-                              key={task.id}
-                              initial={{ opacity: 0, scale: 0.95 }}
-                              animate={{ opacity: 1, scale: 1 }}
-                              transition={{
-                                delay: colIndex * 0.1 + taskIndex * 0.05,
-                              }}
-                              whileHover={{ y: -2 }}
-                              className="p-4 rounded-lg border hover:shadow-sm transition-all cursor-pointer bg-card"
-                            >
-                              <div className="flex items-start justify-between mb-2">
-                                <h4 className="font-medium text-foreground">
-                                  {task.title}
-                                </h4>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-6 w-6"
-                                >
-                                  <MoreVertical className="h-4 w-4" />
-                                </Button>
-                              </div>
-
-                              {task.content_item && (
-                                <p className="text-sm text-muted-foreground mb-3">
-                                  {task.content_item.title}
-                                </p>
-                              )}
-
-                              <div className="flex items-center justify-between text-xs text-muted-foreground">
-                                <div className="flex items-center gap-2">
-                                  <Clock className="h-3 w-3" />
-                                  <span>
-                                    {task.due_date
-                                      ? `Vence em ${new Date(task.due_date).toLocaleDateString("pt-BR")}`
-                                      : "Sem prazo"}
-                                  </span>
+                          {/* Tarefas */}
+                          <div className="space-y-3">
+                            {tasks.map((task, taskIndex) => (
+                              <motion.div
+                                key={task.id}
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                transition={{
+                                  delay: colIndex * 0.1 + taskIndex * 0.05,
+                                }}
+                                whileHover={{ y: -2 }}
+                                className="p-4 rounded-lg border hover:shadow-sm transition-all cursor-pointer bg-card"
+                              >
+                                <div className="flex items-start justify-between mb-2">
+                                  <h4 className="font-medium text-foreground">
+                                    {task.title}
+                                  </h4>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6"
+                                  >
+                                    <MoreVertical className="h-4 w-4" />
+                                  </Button>
                                 </div>
 
-                                {task.assigned_to && (
-                                  <div
-                                    className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center"
-                                    title={task.assigned_to.name}
-                                  >
-                                    <Users className="h-3 w-3 text-primary" />
-                                  </div>
+                                {task.content_item && (
+                                  <p className="text-sm text-muted-foreground mb-3">
+                                    {task.content_item.title}
+                                  </p>
                                 )}
-                              </div>
-                            </motion.div>
-                          ))}
-                        </div>
-                      </motion.div>
-                    );
-                  },
-                )}
-              </div>
+
+                                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                                  <div className="flex items-center gap-2">
+                                    <Clock className="h-3 w-3" />
+                                    <span>
+                                      {task.due_date
+                                        ? `Vence em ${new Date(task.due_date).toLocaleDateString("pt-BR")}`
+                                        : "Sem prazo"}
+                                    </span>
+                                  </div>
+
+                                  {task.assigned_to && (
+                                    <div
+                                      className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center"
+                                      title={task.assigned_to.name}
+                                    >
+                                      <Users className="h-3 w-3 text-primary" />
+                                    </div>
+                                  )}
+                                </div>
+                              </motion.div>
+                            ))}
+                          </div>
+                        </motion.div>
+                      );
+                    },
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
         </motion.div>
