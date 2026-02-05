@@ -8,6 +8,7 @@ import roleRoutes from "./modules/role/role.routes";
 import onboardingRoutes from "./modules/onboarding/onboarding.routes";
 import dashboardRoutes from "./modules/dashboard/dashboard.routes";
 import contentItemRoutes from "./modules/content-item/content-item.routes";
+import taskRoutes from "./modules/task/task.routes";
 import { globalErrorHandler } from "./lib/global-error-handler";
 
 const fastify = Fastify({ logger: true });
@@ -31,6 +32,7 @@ async function bootstrap() {
       fastify.register(onboardingRoutes);
       fastify.register(dashboardRoutes);
       fastify.register(contentItemRoutes);
+      fastify.register(taskRoutes);
     },
     { prefix: "/api" },
   );
