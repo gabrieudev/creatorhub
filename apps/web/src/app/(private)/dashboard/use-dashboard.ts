@@ -342,7 +342,7 @@ export default function useDashboard() {
     },
   }).data;
 
-  const contentPerformance =
+  const { data: contentPerformance = [], refetch: refetchContentPerformance } =
     useQuery<ContentPerformance[]>({
       queryKey: ["contentPerformance", organizationId],
       enabled: !!organizationId,
@@ -357,7 +357,7 @@ export default function useDashboard() {
         });
         return data;
       },
-    }).data || [];
+    });
 
   const platformColors: Record<ContentPlatform, string> = {
     [ContentPlatform.YOUTUBE]: "#FF0000",
@@ -478,5 +478,6 @@ export default function useDashboard() {
     setOpenNewTaskModal,
     organizationId,
     refetchPendingTasks,
+    refetchContentPerformance,
   };
 }

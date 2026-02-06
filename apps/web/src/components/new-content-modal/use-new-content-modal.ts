@@ -1,7 +1,13 @@
 import api from "@/lib/api";
 import { ContentPlatform, ContentStatus } from "@/shared/enums";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  type QueryObserverResult,
+  type RefetchOptions,
+} from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -54,15 +60,19 @@ function useSelectedOrganization() {
   return organizationId;
 }
 
-type NewContentModalState = {
+type UseNewContentModalProps = {
   openContentModal: boolean;
   setOpenContentModal: (open: boolean) => void;
+  refetchContentPerformance: (
+    options?: RefetchOptions,
+  ) => Promise<QueryObserverResult<ContentPerformance[], Error>>;
 };
 
 export default function useNewContentModal({
   openContentModal,
   setOpenContentModal,
-}: NewContentModalState) {
+  refetchContentPerformance,
+}: UseNewContentModalProps) {
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
   const organizationId = useSelectedOrganization();
@@ -89,24 +99,6 @@ export default function useNewContentModal({
     "publicado",
     "arquivado",
   ] as const;
-
-  const { refetch: refetchContentPerformance } = useQuery<ContentPerformance[]>(
-    {
-      queryKey: ["contentPerformance", organizationId],
-      enabled: false,
-      queryFn: async () => {
-        const { data } = await api.get("/content-performance", {
-          params: {
-            organizationId,
-            limit: 10,
-            orderBy: "revenue",
-            page: 1,
-          },
-        });
-        return data;
-      },
-    },
-  );
 
   function useCreateContentItem() {
     const queryClient = useQueryClient();

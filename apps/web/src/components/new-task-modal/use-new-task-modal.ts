@@ -97,7 +97,6 @@ export default function useNewTaskModal({
   refetchPendingTasks,
 }: UseNewTaskModalProps) {
   const [activeTab, setActiveTab] = useState("details");
-  const [loading, setLoading] = useState(false);
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
   const [contentSearchOpen, setContentSearchOpen] = useState(false);
@@ -121,20 +120,24 @@ export default function useNewTaskModal({
     });
   }
 
-  const { data: contentItems = [] } = useQuery<ContentItem[]>({
-    queryKey: ["contentItems", organizationId],
-    enabled: !!organizationId,
-    queryFn: async () => {
-      const { data } = await api.get(
-        `/organizations/${organizationId}/content-items`,
-      );
-      return data;
-    },
-  });
+  const { data: contentItems = [], isPending: isLoadingContentItems } =
+    useQuery<ContentItem[]>({
+      queryKey: ["contentItems", organizationId],
+      enabled: !!organizationId && contentSearchOpen,
+      queryFn: async () => {
+        const { data } = await api.get(
+          `/organizations/${organizationId}/content-items`,
+        );
+        return data;
+      },
+    });
 
-  const { data: organizationMembers = [] } = useQuery<OrganizationMember[]>({
+  const {
+    data: organizationMembers = [],
+    isPending: isLoadingOrganizationMembers,
+  } = useQuery<OrganizationMember[]>({
     queryKey: ["organizationMembers", organizationId],
-    enabled: !!organizationId,
+    enabled: !!organizationId && assigneeSearchOpen,
     queryFn: async () => {
       const { data } = await api.get(
         `/organizations/${organizationId}/members`,
@@ -261,7 +264,6 @@ export default function useNewTaskModal({
   return {
     activeTab,
     setActiveTab,
-    loading,
     form,
     watchStatus,
     watchPriority,
@@ -287,5 +289,7 @@ export default function useNewTaskModal({
     taskStatusOptions,
     priorityOptions,
     isCreatingTask,
+    isLoadingContentItems,
+    isLoadingOrganizationMembers,
   };
 }

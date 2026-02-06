@@ -71,6 +71,7 @@ export default function DashboardPage() {
     setOpenNewTaskModal,
     organizationId,
     refetchPendingTasks,
+    refetchContentPerformance,
   } = useDashboard();
 
   return (
@@ -113,6 +114,7 @@ export default function DashboardPage() {
               <NewContentModal
                 openContentModal={openNewContentModal}
                 setOpenContentModal={setOpenNewContentModal}
+                refetchContentPerformance={refetchContentPerformance}
               />
             </div>
           </div>
@@ -285,7 +287,10 @@ export default function DashboardPage() {
                         </motion.div>
                       ))}
                     </div>
-                    <Button variant="ghost" className="w-full mt-4 cursor-pointer">
+                    <Button
+                      variant="ghost"
+                      className="w-full mt-4 cursor-pointer"
+                    >
                       Ver todos os conteúdos
                     </Button>
                   </CardContent>
@@ -359,7 +364,10 @@ export default function DashboardPage() {
                         </motion.div>
                       ))}
                     </div>
-                    <Button variant="ghost" className="w-full mt-4 cursor-pointer">
+                    <Button
+                      variant="ghost"
+                      className="w-full mt-4 cursor-pointer"
+                    >
                       Ver calendário completo
                     </Button>
                   </CardContent>

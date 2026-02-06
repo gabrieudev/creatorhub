@@ -100,10 +100,11 @@ export function NewTaskModal({
     tabContentVariants,
     taskStatusOptions,
     priorityOptions,
-    loading,
     organizationMembers,
     contentItems,
     isCreatingTask,
+    isLoadingContentItems,
+    isLoadingOrganizationMembers,
   } = useNewTaskModal({
     organizationId,
     setOpenNewTaskModal,
@@ -348,44 +349,53 @@ export function NewTaskModal({
                                   </FormControl>
                                 </CommandPopoverTrigger>
                                 <CommandPopoverContent className="w-100 p-0">
-                                  <Command>
-                                    <CommandInput placeholder="Buscar conteúdo..." />
-                                    <CommandEmpty>
-                                      Nenhum conteúdo encontrado.
-                                    </CommandEmpty>
-                                    <CommandGroup className="max-h-50 overflow-y-auto">
-                                      {contentItems.map((item) => (
-                                        <CommandItem
-                                          key={item.id}
-                                          value={item.title}
-                                          onSelect={() => {
-                                            form.setValue(
-                                              "contentItemId",
-                                              item.id,
-                                            );
-                                            setContentSearchOpen(false);
-                                          }}
-                                          className="flex items-center gap-2"
-                                        >
-                                          <Badge
-                                            variant="outline"
-                                            className="text-xs"
+                                  {isLoadingContentItems ? (
+                                    <div className="w-full flex items-center justify-center p-4">
+                                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                      <span className="text-sm text-muted-foreground">
+                                        Carregando...
+                                      </span>
+                                    </div>
+                                  ) : (
+                                    <Command>
+                                      <CommandInput placeholder="Buscar conteúdo..." />
+                                      <CommandEmpty>
+                                        Nenhum conteúdo encontrado.
+                                      </CommandEmpty>
+                                      <CommandGroup className="max-h-50 overflow-y-auto">
+                                        {contentItems.map((item) => (
+                                          <CommandItem
+                                            key={item.id}
+                                            value={item.title}
+                                            onSelect={() => {
+                                              form.setValue(
+                                                "contentItemId",
+                                                item.id,
+                                              );
+                                              setContentSearchOpen(false);
+                                            }}
+                                            className="flex items-center gap-2"
                                           >
-                                            {item.platform || "N/A"}
-                                          </Badge>
-                                          <span className="truncate">
-                                            {item.title}
-                                          </span>
-                                          <Badge
-                                            variant="secondary"
-                                            className="ml-auto text-xs"
-                                          >
-                                            {item.status}
-                                          </Badge>
-                                        </CommandItem>
-                                      ))}
-                                    </CommandGroup>
-                                  </Command>
+                                            <Badge
+                                              variant="outline"
+                                              className="text-xs"
+                                            >
+                                              {item.platform || "N/A"}
+                                            </Badge>
+                                            <span className="truncate">
+                                              {item.title}
+                                            </span>
+                                            <Badge
+                                              variant="secondary"
+                                              className="ml-auto text-xs"
+                                            >
+                                              {item.status}
+                                            </Badge>
+                                          </CommandItem>
+                                        ))}
+                                      </CommandGroup>
+                                    </Command>
+                                  )}
                                 </CommandPopoverContent>
                               </CommandPopover>
                               <FormDescription>
@@ -465,54 +475,63 @@ export function NewTaskModal({
                                   </FormControl>
                                 </CommandPopoverTrigger>
                                 <CommandPopoverContent className="w-100 p-0">
-                                  <Command>
-                                    <CommandInput placeholder="Buscar membro..." />
-                                    <CommandEmpty>
-                                      Nenhum membro encontrado.
-                                    </CommandEmpty>
-                                    <CommandGroup className="max-h-50 overflow-y-auto">
-                                      {organizationMembers.map((member) => (
-                                        <CommandItem
-                                          key={member.id}
-                                          value={member.user.name}
-                                          onSelect={() => {
-                                            form.setValue(
-                                              "assignedTo",
-                                              member.id,
-                                            );
-                                            setAssigneeSearchOpen(false);
-                                          }}
-                                          className="flex items-center gap-2"
-                                        >
-                                          {member.user.image ? (
-                                            <img
-                                              src={member.user.image}
-                                              alt={member.user.name}
-                                              className="w-6 h-6 rounded-full"
-                                            />
-                                          ) : (
-                                            <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center">
-                                              <User className="w-4 h-4 text-blue-600" />
+                                  {isLoadingOrganizationMembers ? (
+                                    <div className="w-full flex items-center justify-center p-4">
+                                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                      <span className="text-sm text-muted-foreground">
+                                        Carregando membros...
+                                      </span>
+                                    </div>
+                                  ) : (
+                                    <Command>
+                                      <CommandInput placeholder="Buscar membro..." />
+                                      <CommandEmpty>
+                                        Nenhum membro encontrado.
+                                      </CommandEmpty>
+                                      <CommandGroup className="max-h-50 overflow-y-auto">
+                                        {organizationMembers.map((member) => (
+                                          <CommandItem
+                                            key={member.id}
+                                            value={member.user.name}
+                                            onSelect={() => {
+                                              form.setValue(
+                                                "assignedTo",
+                                                member.id,
+                                              );
+                                              setAssigneeSearchOpen(false);
+                                            }}
+                                            className="flex items-center gap-2"
+                                          >
+                                            {member.user.image ? (
+                                              <img
+                                                src={member.user.image}
+                                                alt={member.user.name}
+                                                className="w-6 h-6 rounded-full"
+                                              />
+                                            ) : (
+                                              <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center">
+                                                <User className="w-4 h-4 text-blue-600" />
+                                              </div>
+                                            )}
+                                            <div className="flex flex-col">
+                                              <span>{member.user.name}</span>
+                                              <span className="text-xs text-muted-foreground">
+                                                {member.user.email}
+                                              </span>
                                             </div>
-                                          )}
-                                          <div className="flex flex-col">
-                                            <span>{member.user.name}</span>
-                                            <span className="text-xs text-muted-foreground">
-                                              {member.user.email}
-                                            </span>
-                                          </div>
-                                          {member.role && (
-                                            <Badge
-                                              variant="outline"
-                                              className="ml-auto text-xs"
-                                            >
-                                              {member.role.name}
-                                            </Badge>
-                                          )}
-                                        </CommandItem>
-                                      ))}
-                                    </CommandGroup>
-                                  </Command>
+                                            {member.role && (
+                                              <Badge
+                                                variant="outline"
+                                                className="ml-auto text-xs"
+                                              >
+                                                {member.role.name}
+                                              </Badge>
+                                            )}
+                                          </CommandItem>
+                                        ))}
+                                      </CommandGroup>
+                                    </Command>
+                                  )}
                                 </CommandPopoverContent>
                               </CommandPopover>
                               <FormDescription>
@@ -697,7 +716,7 @@ export function NewTaskModal({
                         type="button"
                         variant="outline"
                         className="transition-all duration-300 hover:scale-105 cursor-pointer"
-                        disabled={loading}
+                        disabled={isCreatingTask}
                       >
                         Cancelar
                       </Button>
@@ -709,7 +728,7 @@ export function NewTaskModal({
                           variant="secondary"
                           onClick={() => setActiveTab("details")}
                           className="transition-all duration-300 hover:scale-105 cursor-pointer"
-                          disabled={loading}
+                          disabled={isCreatingTask}
                         >
                           Voltar
                         </Button>
@@ -720,7 +739,7 @@ export function NewTaskModal({
                           variant="secondary"
                           onClick={() => setActiveTab("advanced")}
                           className="transition-all duration-300 hover:scale-105 cursor-pointer"
-                          disabled={loading}
+                          disabled={isCreatingTask}
                         >
                           Configurações Avançadas
                         </Button>

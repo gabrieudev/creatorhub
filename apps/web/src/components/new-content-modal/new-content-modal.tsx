@@ -35,15 +35,23 @@ import {
   SelectValue,
 } from "../ui/select";
 import { CalendarIcon, Globe, Loader2, Lock, Users, Video } from "lucide-react";
+import type {
+  QueryObserverResult,
+  RefetchOptions,
+} from "@tanstack/react-query";
 
 type NewContentModalProps = {
   openContentModal: boolean;
   setOpenContentModal: (open: boolean) => void;
+  refetchContentPerformance: (
+    options?: RefetchOptions,
+  ) => Promise<QueryObserverResult<ContentPerformance[], Error>>;
 };
 
 export function NewContentModal({
   openContentModal,
   setOpenContentModal,
+  refetchContentPerformance,
 }: NewContentModalProps) {
   const {
     contentModalActiveTab,
@@ -65,6 +73,7 @@ export function NewContentModal({
   } = useNewContentModal({
     openContentModal,
     setOpenContentModal,
+    refetchContentPerformance,
   });
 
   return (
@@ -500,7 +509,9 @@ export function NewContentModal({
                 >
                   <DialogFooter className="flex flex-col sm:flex-row gap-2 mt-6 pt-6 border-t">
                     <DialogClose className="transition-all duration-300 hover:scale-105">
-                      <Button variant="outline" className="cursor-pointer">Cancelar</Button>
+                      <Button variant="outline" className="cursor-pointer">
+                        Cancelar
+                      </Button>
                     </DialogClose>
                     <div className="flex gap-2">
                       {contentModalActiveTab !== "basic" && (
