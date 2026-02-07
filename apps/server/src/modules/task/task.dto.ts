@@ -16,7 +16,7 @@ export const createTaskSchema = z.object({
     .uuid("Invalid content item ID")
     .optional()
     .nullable(),
-  status: taskStatusEnum.optional().default("todo"),
+  status: z.string().optional(),
   priority: z.number().int().min(0).max(5).default(0),
   assignedTo: z.string().uuid("Invalid user ID").optional().nullable(),
   dueDate: z.string().datetime("Invalid date format").optional().nullable(),
@@ -31,6 +31,39 @@ export const updateTaskSchema = createTaskSchema.partial().extend({
 });
 
 export type UpdateTaskInput = z.infer<typeof updateTaskSchema>;
+
+// Query parameter schemas
+export const listTasksByOrgQuerySchema = z.object({
+  organizationId: z.string().uuid("Invalid organization ID"),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+  offset: z.coerce.number().int().min(0).default(0),
+  status: taskStatusEnum.optional(),
+  assignedTo: z.string().uuid("Invalid user ID").optional(),
+});
+
+export const listTasksByAssignedQuerySchema = z.object({
+  assignedTo: z.string().uuid("Invalid user ID"),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+  offset: z.coerce.number().int().min(0).default(0),
+});
+
+export const listTasksByContentQuerySchema = z.object({
+  contentItemId: z.string().uuid("Invalid content item ID"),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+  offset: z.coerce.number().int().min(0).default(0),
+});
+
+export const taskIdSchema = z.object({
+  id: z.string().uuid("Invalid task ID"),
+});
+
+export const assignedToParamSchema = z.object({
+  assignedTo: z.string().uuid("Invalid user ID"),
+});
+
+export const contentItemIdParamSchema = z.object({
+  contentItemId: z.string().uuid("Invalid content item ID"),
+});
 
 export const taskResponseSchema = z.object({
   id: z.string().uuid(),

@@ -1,200 +1,207 @@
-import type { FastifyPluginOptions } from "fastify";
-import Fastify from "fastify";
-import { type ZodTypeProvider } from "fastify-type-provider-zod";
-import { z } from "zod";
+import type { FastifyInstance, FastifyPluginOptions } from "fastify";
+import { ZodError } from "zod";
+import { BadRequestError } from "../../lib/errors";
 import {
   createTaskSchema,
-  taskResponseSchema,
   updateTaskSchema,
+  taskResponseSchema,
+  listTasksByOrgQuerySchema,
+  taskIdSchema,
+  assignedToParamSchema,
+  contentItemIdParamSchema,
+  listTasksByAssignedQuerySchema,
+  listTasksByContentQuerySchema,
 } from "./task.dto";
-import { TaskService, type TaskStatus } from "./task.service";
+import { TaskService } from "./task.service";
 
-export const fastify = Fastify().withTypeProvider<ZodTypeProvider>();
+function validateRequest<T>(schema: any, data: any): T {
+  try {
+    return schema.parse(data);
+  } catch (error) {
+    if (error instanceof ZodError) {
+      throw new BadRequestError("Invalid data: " + error.message);
+    }
+    throw error;
+  }
+}
 
-const allowedStatuses = [
-  "todo",
-  "in_progress",
-  "blocked",
-  "done",
-  "archived",
-] as const;
+function getUserId(request: any): string | undefined {
+  return request.session?.user?.id;
+}
 
-// Request schemas
-const organizationIdSchema = z.object({
-  organizationId: z.string().uuid(),
-});
-
-const taskIdSchema = z.object({
-  id: z.string().uuid(),
-});
-
-const assignedToSchema = z.object({
-  assignedTo: z.string().uuid(),
-});
-
-const contentItemIdSchema = z.object({
-  contentItemId: z.string().uuid(),
-});
-
-const listTasksQuerySchema = z.object({
-  limit: z.coerce.number().int().min(1).max(100).default(50),
-  offset: z.coerce.number().int().min(0).default(0),
-  status: z.enum(allowedStatuses).optional(),
-  assignedTo: z.string().uuid().optional(),
-});
-
-export default async function taskController(_opts: FastifyPluginOptions) {
+export default async function taskController(
+  fastify: FastifyInstance,
+  _opts: FastifyPluginOptions,
+) {
   // Get organization tasks with filters
   fastify.get(
     "/organizations/:organizationId/tasks",
-    {
-      schema: {
-        params: organizationIdSchema,
-        querystring: listTasksQuerySchema,
-      },
-    },
     async (request, reply) => {
-      const { organizationId } = request.params as { organizationId: string };
-      const query = request.query as z.infer<typeof listTasksQuerySchema>;
-      const actorUserId = request.session?.user?.id as string | undefined;
+      try {
+        const params = validateRequest(
+          listTasksByOrgQuerySchema.pick({ organizationId: true }),
+          request.params,
+        ) as { organizationId: string };
 
-      const tasks = await TaskService.listByOrganization(
-        organizationId,
-        actorUserId,
-        {
-          limit: query.limit,
-          offset: query.offset,
-          status: query.status as TaskStatus,
-          assignedTo: query.assignedTo,
-        },
-      );
+        const query = validateRequest(
+          listTasksByOrgQuerySchema.omit({ organizationId: true }),
+          request.query,
+        ) as {
+          limit: number;
+          offset: number;
+          status?: "todo" | "in_progress" | "blocked" | "done" | "archived";
+          assignedTo?: string;
+        };
 
-      return reply.send(tasks.map((task) => taskResponseSchema.parse(task)));
+        const actorUserId = getUserId(request);
+
+        const tasks = await TaskService.listByOrganization(
+          params.organizationId,
+          actorUserId,
+          {
+            limit: query.limit,
+            offset: query.offset,
+            status: query.status,
+            assignedTo: query.assignedTo,
+          },
+        );
+
+        const validatedTasks = tasks.map((task) =>
+          taskResponseSchema.parse(task),
+        );
+        return reply.send(validatedTasks);
+      } catch (error) {
+        throw error;
+      }
     },
   );
 
   // Create task
   fastify.post(
     "/organizations/:organizationId/tasks",
-    {
-      schema: {
-        params: organizationIdSchema,
-        body: createTaskSchema,
-      },
-    },
     async (request, reply) => {
-      const { organizationId } = request.params as { organizationId: string };
-      const actorUserId = request.session?.user?.id as string | undefined;
+      try {
+        const params = validateRequest(
+          listTasksByOrgQuerySchema.pick({ organizationId: true }),
+          request.params,
+        ) as { organizationId: string };
 
-      const task = await TaskService.create(
-        organizationId,
-        request.body,
-        actorUserId,
-      );
+        const body = validateRequest(createTaskSchema, request.body);
+        const actorUserId = getUserId(request);
 
-      return reply.code(201).send(taskResponseSchema.parse(task));
+        const task = await TaskService.create(
+          params.organizationId,
+          body,
+          actorUserId,
+        );
+
+        const validatedResponse = taskResponseSchema.parse(task);
+        return reply.code(201).send(validatedResponse);
+      } catch (error) {
+        throw error;
+      }
     },
   );
 
   // Get task by ID
-  fastify.get(
-    "/tasks/:id",
-    {
-      schema: {
-        params: taskIdSchema,
-      },
-    },
-    async (request, reply) => {
-      const { id } = request.params as { id: string };
-      const actorUserId = request.session?.user?.id as string | undefined;
+  fastify.get("/tasks/:id", async (request, reply) => {
+    try {
+      const params = validateRequest(taskIdSchema, request.params) as {
+        id: string;
+      };
+      const actorUserId = getUserId(request);
 
-      const task = await TaskService.getById(id, actorUserId);
-      return reply.send(taskResponseSchema.parse(task));
-    },
-  );
+      const task = await TaskService.getById(params.id, actorUserId);
+      const validatedResponse = taskResponseSchema.parse(task);
+      return reply.send(validatedResponse);
+    } catch (error) {
+      throw error;
+    }
+  });
 
   // Update task
-  fastify.patch(
-    "/tasks/:id",
-    {
-      schema: {
-        params: taskIdSchema,
-        body: updateTaskSchema,
-      },
-    },
-    async (request, reply) => {
-      const { id } = request.params as { id: string };
-      const actorUserId = request.session?.user?.id as string | undefined;
+  fastify.patch("/tasks/:id", async (request, reply) => {
+    try {
+      const params = validateRequest(taskIdSchema, request.params) as {
+        id: string;
+      };
+      const body = validateRequest(updateTaskSchema, request.body);
+      const actorUserId = getUserId(request);
 
-      const task = await TaskService.update(id, request.body, actorUserId);
-      return reply.send(taskResponseSchema.parse(task));
-    },
-  );
+      const task = await TaskService.update(params.id, body, actorUserId);
+      const validatedResponse = taskResponseSchema.parse(task);
+      return reply.send(validatedResponse);
+    } catch (error) {
+      throw error;
+    }
+  });
 
   // Delete task
-  fastify.delete(
-    "/tasks/:id",
-    {
-      schema: {
-        params: taskIdSchema,
-      },
-    },
-    async (request, reply) => {
-      const { id } = request.params as { id: string };
-      const actorUserId = request.session?.user?.id as string | undefined;
+  fastify.delete("/tasks/:id", async (request, reply) => {
+    try {
+      const params = validateRequest(taskIdSchema, request.params) as {
+        id: string;
+      };
+      const actorUserId = getUserId(request);
 
-      await TaskService.remove(id, actorUserId);
+      await TaskService.remove(params.id, actorUserId);
       return reply.code(204).send();
-    },
-  );
+    } catch (error) {
+      throw error;
+    }
+  });
 
   // Get tasks assigned to user
-  fastify.get(
-    "/assigned/:assignedTo/tasks",
-    {
-      schema: {
-        params: assignedToSchema,
-        querystring: listTasksQuerySchema.pick({ limit: true, offset: true }),
-      },
-    },
-    async (request, reply) => {
-      const { assignedTo } = request.params as { assignedTo: string };
-      const { limit, offset } = request.query as z.infer<
-        typeof listTasksQuerySchema
-      >;
-      const actorUserId = request.session?.user?.id as string | undefined;
+  fastify.get("/assigned/:assignedTo/tasks", async (request, reply) => {
+    try {
+      const params = validateRequest(assignedToParamSchema, request.params) as {
+        assignedTo: string;
+      };
+      const query = validateRequest(
+        listTasksByAssignedQuerySchema.omit({ assignedTo: true }),
+        request.query,
+      ) as { limit: number; offset: number };
+
+      const actorUserId = getUserId(request);
 
       const tasks = await TaskService.listByAssignedTo(
-        assignedTo,
+        params.assignedTo,
         actorUserId,
-        { limit, offset },
+        { limit: query.limit, offset: query.offset },
       );
 
-      return reply.send(tasks.map((task) => taskResponseSchema.parse(task)));
-    },
-  );
+      const validatedTasks = tasks.map((task) =>
+        taskResponseSchema.parse(task),
+      );
+      return reply.send(validatedTasks);
+    } catch (error) {
+      throw error;
+    }
+  });
 
   // Get tasks by content item
-  fastify.get(
-    "/content-items/:contentItemId/tasks",
-    {
-      schema: {
-        params: contentItemIdSchema,
-        querystring: listTasksQuerySchema.pick({ limit: true, offset: true }),
-      },
-    },
-    async (request, reply) => {
-      const { contentItemId } = request.params as { contentItemId: string };
-      const { limit, offset } = request.query as z.infer<
-        typeof listTasksQuerySchema
-      >;
+  fastify.get("/content-items/:contentItemId/tasks", async (request, reply) => {
+    try {
+      const params = validateRequest(
+        contentItemIdParamSchema,
+        request.params,
+      ) as { contentItemId: string };
+      const query = validateRequest(
+        listTasksByContentQuerySchema.omit({ contentItemId: true }),
+        request.query,
+      ) as { limit: number; offset: number };
 
-      const tasks = await TaskService.listByContentItem(contentItemId, {
-        limit,
-        offset,
+      const tasks = await TaskService.listByContentItem(params.contentItemId, {
+        limit: query.limit,
+        offset: query.offset,
       });
 
-      return reply.send(tasks.map((task) => taskResponseSchema.parse(task)));
-    },
-  );
+      const validatedTasks = tasks.map((task) =>
+        taskResponseSchema.parse(task),
+      );
+      return reply.send(validatedTasks);
+    } catch (error) {
+      throw error;
+    }
+  });
 }

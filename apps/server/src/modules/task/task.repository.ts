@@ -63,7 +63,7 @@ export const TaskRepository = {
     const [task] = await db.insert(tasksInApp).values(payload).returning();
 
     if (!task) {
-      throw new Error("Failed to create task");
+      throw new Error("Falha ao criar a tarefa");
     }
 
     return task;
@@ -165,7 +165,6 @@ export const TaskRepository = {
       updatedAt: new Date().toISOString(),
     };
 
-    // Map only provided fields
     const fields = [
       "title",
       "description",

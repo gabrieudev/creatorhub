@@ -21,38 +21,102 @@ import {
   sum,
 } from "drizzle-orm";
 import type {
-  ContentByStatus,
-  ContentPerformance,
   DashboardStats,
+  RevenueByPlatform,
+  ContentPerformance,
+  UpcomingContent,
   PendingTasks,
   RecentActivity,
-  RevenueByPlatform,
   RevenueTrend,
   TasksDistribution,
-  UpcomingContent,
+  ContentByStatus,
 } from "./dashboard.dto";
+
+type Platform =
+  | "youtube"
+  | "tiktok"
+  | "instagram"
+  | "twitch"
+  | "facebook"
+  | "other";
+type Period = "week" | "month" | "quarter" | "year";
+type Range = "day" | "week" | "month" | "quarter";
+type OrderBy = "revenue" | "views" | "engagement";
+type TaskStatus = "todo" | "in_progress" | "blocked" | "done" | "archived";
+
+function calculateDateRange(period: Period): { start: Date; end: Date } {
+  const end = new Date();
+  const start = new Date();
+
+  switch (period) {
+    case "week":
+      start.setDate(end.getDate() - 7);
+      break;
+    case "month":
+      start.setMonth(end.getMonth() - 1);
+      break;
+    case "quarter":
+      start.setMonth(end.getMonth() - 3);
+      break;
+    case "year":
+      start.setFullYear(end.getFullYear() - 1);
+      break;
+  }
+
+  return { start, end };
+}
+
+function calculatePreviousPeriod(
+  start: Date,
+  end: Date,
+): { start: Date; end: Date } {
+  const duration = end.getTime() - start.getTime();
+
+  return {
+    start: new Date(start.getTime() - duration),
+    end: start,
+  };
+}
+
+function getDateInterval(range: Range): string {
+  switch (range) {
+    case "day":
+      return "YYYY-MM-DD";
+    case "week":
+      return "IYYY-IW";
+    case "month":
+      return "YYYY-MM";
+    case "quarter":
+      return "YYYY-Q";
+    default:
+      return "YYYY-MM";
+  }
+}
 
 export const DashboardRepository = {
   async getDashboardStats(organizationId: string): Promise<DashboardStats> {
     // Receita total
-    const totalRevenueResult = await db
+    const [totalRevenueResult] = await db
       .select({ total: sum(revenueEntriesInApp.amount) })
       .from(revenueEntriesInApp)
-      .where(eq(revenueEntriesInApp.organizationId, organizationId))
-      .execute();
-    const totalRevenue = totalRevenueResult[0]?.total || 0;
+      .where(eq(revenueEntriesInApp.organizationId, organizationId));
+
+    const totalRevenue = Number(totalRevenueResult?.total || 0);
 
     // Receita mensal (mês atual)
-    const startOfMonth = new Date();
-    startOfMonth.setDate(1);
-    startOfMonth.setHours(0, 0, 0, 0);
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endOfMonth = new Date(
+      now.getFullYear(),
+      now.getMonth() + 1,
+      0,
+      23,
+      59,
+      59,
+      999,
+    );
 
-    const endOfMonth = new Date();
-    endOfMonth.setMonth(endOfMonth.getMonth() + 1);
-    endOfMonth.setDate(0);
-    endOfMonth.setHours(23, 59, 59, 999);
-
-    const monthlyRevenueResult = await db
+    const [monthlyRevenueResult] = await db
       .select({ total: sum(revenueEntriesInApp.amount) })
       .from(revenueEntriesInApp)
       .where(
@@ -64,29 +128,28 @@ export const DashboardRepository = {
             endOfMonth.toISOString(),
           ),
         ),
-      )
-      .execute();
-    const monthlyRevenue = monthlyRevenueResult[0]?.total || 0;
+      );
+
+    const monthlyRevenue = Number(monthlyRevenueResult?.total || 0);
 
     // Conteúdo ativo (publicado nos últimos 30 dias)
-    const activeContentResult = await db
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+    const [activeContentResult] = await db
       .select({ count: count() })
       .from(contentItemsInApp)
       .where(
         and(
           eq(contentItemsInApp.organizationId, organizationId),
           eq(contentItemsInApp.status, "publicado"),
-          gte(
-            contentItemsInApp.publishedAt,
-            new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-          ),
+          gte(contentItemsInApp.publishedAt, thirtyDaysAgo.toISOString()),
         ),
-      )
-      .execute();
-    const activeContent = activeContentResult[0]?.count;
+      );
+
+    const activeContent = activeContentResult?.count || 0;
 
     // Tarefas pendentes
-    const pendingTasksResult = await db
+    const [pendingTasksResult] = await db
       .select({ count: count() })
       .from(tasksInApp)
       .where(
@@ -94,12 +157,12 @@ export const DashboardRepository = {
           eq(tasksInApp.organizationId, organizationId),
           inArray(tasksInApp.status, ["todo", "in_progress", "blocked"]),
         ),
-      )
-      .execute();
-    const pendingTasks = pendingTasksResult[0]?.count;
+      );
+
+    const pendingTasks = pendingTasksResult?.count || 0;
 
     // Membros da equipe
-    const teamMembersResult = await db
+    const [teamMembersResult] = await db
       .select({ count: count() })
       .from(organizationMembersInApp)
       .where(
@@ -107,39 +170,40 @@ export const DashboardRepository = {
           eq(organizationMembersInApp.organizationId, organizationId),
           eq(organizationMembersInApp.flActive, true),
         ),
-      )
-      .execute();
-    const teamMembers = teamMembersResult[0]?.count;
+      );
+
+    const teamMembers = teamMembersResult?.count || 0;
 
     // Publicações agendadas (programadas para os próximos 7 dias)
-    const upcomingPublicationsResult = await db
+    const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+    const [upcomingPublicationsResult] = await db
       .select({ count: count() })
       .from(contentItemsInApp)
       .where(
         and(
           eq(contentItemsInApp.organizationId, organizationId),
           eq(contentItemsInApp.status, "agendado"),
-          gte(contentItemsInApp.scheduledAt, new Date().toISOString()),
-          lte(
-            contentItemsInApp.scheduledAt,
-            new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-          ),
+          gte(contentItemsInApp.scheduledAt, now.toISOString()),
+          lte(contentItemsInApp.scheduledAt, nextWeek.toISOString()),
         ),
-      )
-      .execute();
-    const upcomingPublications = upcomingPublicationsResult[0]?.count;
+      );
 
-    // Crescimento da receita (comparar mês atual com mês anterior)
-    const startOfLastMonth = new Date();
-    startOfLastMonth.setMonth(startOfLastMonth.getMonth() - 1);
-    startOfLastMonth.setDate(1);
-    startOfLastMonth.setHours(0, 0, 0, 0);
+    const upcomingPublications = upcomingPublicationsResult?.count || 0;
 
-    const endOfLastMonth = new Date();
-    endOfLastMonth.setDate(0);
-    endOfLastMonth.setHours(23, 59, 59, 999);
+    // Crescimento da receita (mês atual vs mês anterior)
+    const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const endOfLastMonth = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      0,
+      23,
+      59,
+      59,
+      999,
+    );
 
-    const lastMonthRevenueResult = await db
+    const [lastMonthRevenueResult] = await db
       .select({ total: sum(revenueEntriesInApp.amount) })
       .from(revenueEntriesInApp)
       .where(
@@ -151,56 +215,48 @@ export const DashboardRepository = {
             endOfLastMonth.toISOString(),
           ),
         ),
-      )
-      .execute();
-    const lastMonthRevenue = Number(lastMonthRevenueResult[0]?.total || 0);
+      );
 
+    const lastMonthRevenue = Number(lastMonthRevenueResult?.total || 0);
     const revenueGrowth =
       lastMonthRevenue === 0
         ? 0
-        : ((Number(monthlyRevenue) - lastMonthRevenue) / lastMonthRevenue) *
-          100;
+        : ((monthlyRevenue - lastMonthRevenue) / lastMonthRevenue) * 100;
 
-    // Taxa de conclusão de tarefas (tarefas concluídas nos últimos 30 dias vs total de tarefas criadas nos últimos 30 dias)
-    const startOfLast30Days = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-
-    const doneTasksResult = await db
+    // Taxa de conclusão de tarefas (tarefas concluídas nos últimos 30 dias vs total de tarefas criadas)
+    const [doneTasksResult] = await db
       .select({ count: count() })
       .from(tasksInApp)
       .where(
         and(
           eq(tasksInApp.organizationId, organizationId),
           eq(tasksInApp.status, "done"),
-          gte(tasksInApp.completedAt, startOfLast30Days.toISOString()),
+          gte(tasksInApp.completedAt, thirtyDaysAgo.toISOString()),
         ),
-      )
-      .execute();
-    const doneTasks = doneTasksResult[0]?.count;
+      );
 
-    const totalTasksLast30DaysResult = await db
+    const [totalTasksLast30DaysResult] = await db
       .select({ count: count() })
       .from(tasksInApp)
       .where(
         and(
           eq(tasksInApp.organizationId, organizationId),
-          gte(tasksInApp.createdAt, startOfLast30Days.toISOString()),
+          gte(tasksInApp.createdAt, thirtyDaysAgo.toISOString()),
         ),
-      )
-      .execute();
-    const totalTasksLast30Days = totalTasksLast30DaysResult[0]?.count;
+      );
 
+    const doneTasks = doneTasksResult?.count || 0;
+    const totalTasksLast30Days = totalTasksLast30DaysResult?.count || 0;
     const taskCompletion =
-      totalTasksLast30Days === 0
-        ? 0
-        : (Number(doneTasks) / Number(totalTasksLast30Days)) * 100;
+      totalTasksLast30Days === 0 ? 0 : (doneTasks / totalTasksLast30Days) * 100;
 
     return {
-      totalRevenue: Number(totalRevenue),
-      monthlyRevenue: Number(monthlyRevenue),
-      activeContent: activeContent ?? 0,
-      pendingTasks: pendingTasks ?? 0,
-      teamMembers: teamMembers ?? 0,
-      upcomingPublications: upcomingPublications ?? 0,
+      totalRevenue,
+      monthlyRevenue,
+      activeContent,
+      pendingTasks,
+      teamMembers,
+      upcomingPublications,
       revenueGrowth: Number(revenueGrowth.toFixed(2)),
       taskCompletion: Number(taskCompletion.toFixed(2)),
     };
@@ -208,197 +264,137 @@ export const DashboardRepository = {
 
   async getRevenueByPlatform(
     organizationId: string,
-    period: "week" | "month" | "quarter" | "year",
+    period: Period,
   ): Promise<RevenueByPlatform> {
-    // Calcular intervalo de datas com base no período
-    let startDate: Date;
-    const endDate = new Date();
-
-    switch (period) {
-      case "week":
-        startDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-        break;
-      case "month":
-        startDate = new Date();
-        startDate.setMonth(startDate.getMonth() - 1);
-        break;
-      case "quarter":
-        startDate = new Date();
-        startDate.setMonth(startDate.getMonth() - 3);
-        break;
-      case "year":
-        startDate = new Date();
-        startDate.setFullYear(startDate.getFullYear() - 1);
-        break;
-      default:
-        startDate = new Date();
-        startDate.setMonth(startDate.getMonth() - 1);
-    }
-
-    // Receita por plataforma no período
-    const revenueByPlatform = await db
-      .select({
-        platform: revenueEntriesInApp.platform,
-        amount: sum(revenueEntriesInApp.amount),
-      })
-      .from(revenueEntriesInApp)
-      .where(
-        and(
-          eq(revenueEntriesInApp.organizationId, organizationId),
-          between(
-            revenueEntriesInApp.receivedAt,
-            startDate.toISOString(),
-            endDate.toISOString(),
-          ),
-        ),
-      )
-      .groupBy(revenueEntriesInApp.platform)
-      .execute();
-
-    // Receita total no período
-    const totalRevenueResult = await db
-      .select({ total: sum(revenueEntriesInApp.amount) })
-      .from(revenueEntriesInApp)
-      .where(
-        and(
-          eq(revenueEntriesInApp.organizationId, organizationId),
-          between(
-            revenueEntriesInApp.receivedAt,
-            startDate.toISOString(),
-            endDate.toISOString(),
-          ),
-        ),
-      )
-      .execute();
-    const totalRevenue = totalRevenueResult[0]?.total || 0;
-
-    // Calcular crescimento em comparação com o período anterior
-    let previousStartDate: Date;
-    let previousEndDate: Date;
-
-    switch (period) {
-      case "week":
-        previousStartDate = new Date(
-          startDate.getTime() - 7 * 24 * 60 * 60 * 1000,
-        );
-        previousEndDate = new Date(startDate.getTime());
-        break;
-      case "month":
-        previousStartDate = new Date(startDate.getTime());
-        previousStartDate.setMonth(previousStartDate.getMonth() - 1);
-        previousEndDate = new Date(startDate.getTime());
-        break;
-      case "quarter":
-        previousStartDate = new Date(startDate.getTime());
-        previousStartDate.setMonth(previousStartDate.getMonth() - 3);
-        previousEndDate = new Date(startDate.getTime());
-        break;
-      case "year":
-        previousStartDate = new Date(startDate.getTime());
-        previousStartDate.setFullYear(previousStartDate.getFullYear() - 1);
-        previousEndDate = new Date(startDate.getTime());
-        break;
-    }
-
-    // Receita do período anterior por plataforma
-    const previousRevenueByPlatform = await db
-      .select({
-        platform: revenueEntriesInApp.platform,
-        amount: sum(revenueEntriesInApp.amount),
-      })
-      .from(revenueEntriesInApp)
-      .where(
-        and(
-          eq(revenueEntriesInApp.organizationId, organizationId),
-          between(
-            revenueEntriesInApp.receivedAt,
-            previousStartDate!.toISOString(),
-            previousEndDate!.toISOString(),
-          ),
-        ),
-      )
-      .groupBy(revenueEntriesInApp.platform)
-      .execute();
-
-    const previousRevenueMap = new Map(
-      previousRevenueByPlatform.map((item) => [
-        item.platform,
-        item.amount || 0,
-      ]),
+    const { start, end } = calculateDateRange(period);
+    const { start: prevStart, end: prevEnd } = calculatePreviousPeriod(
+      start,
+      end,
     );
 
-    const result = revenueByPlatform.map((item) => {
-      const previousAmount = previousRevenueMap.get(item.platform) || 0;
-      const currentAmount = item.amount || 0;
+    // Período atual - receita por plataforma
+    const currentRevenue = await db
+      .select({
+        platform: revenueEntriesInApp.platform,
+        amount: sum(revenueEntriesInApp.amount),
+      })
+      .from(revenueEntriesInApp)
+      .where(
+        and(
+          eq(revenueEntriesInApp.organizationId, organizationId),
+          between(
+            revenueEntriesInApp.receivedAt,
+            start.toISOString(),
+            end.toISOString(),
+          ),
+        ),
+      )
+      .groupBy(revenueEntriesInApp.platform);
+
+    // Período anterior - receita por plataforma
+    const previousRevenue = await db
+      .select({
+        platform: revenueEntriesInApp.platform,
+        amount: sum(revenueEntriesInApp.amount),
+      })
+      .from(revenueEntriesInApp)
+      .where(
+        and(
+          eq(revenueEntriesInApp.organizationId, organizationId),
+          between(
+            revenueEntriesInApp.receivedAt,
+            prevStart.toISOString(),
+            prevEnd.toISOString(),
+          ),
+        ),
+      )
+      .groupBy(revenueEntriesInApp.platform);
+
+    const totalCurrentRevenue = currentRevenue.reduce(
+      (sum, item) => sum + Number(item.amount || 0),
+      0,
+    );
+    const previousRevenueMap = new Map(
+      previousRevenue.map((item) => [item.platform, Number(item.amount || 0)]),
+    );
+
+    const allPlatforms: Platform[] = [
+      "youtube",
+      "tiktok",
+      "instagram",
+      "twitch",
+      "facebook",
+      "other",
+    ];
+
+    return allPlatforms.map((platform) => {
+      const currentItem = currentRevenue.find(
+        (item) => item.platform === platform,
+      );
+      const currentAmount = Number(currentItem?.amount || 0);
+      const previousAmount = previousRevenueMap.get(platform) || 0;
+
+      const percentage =
+        totalCurrentRevenue === 0
+          ? 0
+          : (currentAmount / totalCurrentRevenue) * 100;
       const growth =
         previousAmount === 0
           ? 0
-          : ((Number(currentAmount) - Number(previousAmount)) /
-              Number(previousAmount)) *
-            100;
+          : ((currentAmount - previousAmount) / previousAmount) * 100;
 
       return {
-        platform: item.platform as any,
-        amount: Number(currentAmount),
-        percentage:
-          totalRevenue === 0
-            ? 0
-            : (Number(currentAmount) / Number(totalRevenue)) * 100,
+        platform,
+        amount: currentAmount,
+        percentage: Number(percentage.toFixed(2)),
         growth: Number(growth.toFixed(2)),
       };
-    });
-
-    // Adicionar plataformas com zero receita
-    const allPlatforms: Array<
-      "youtube" | "tiktok" | "instagram" | "twitch" | "facebook" | "other"
-    > = ["youtube", "tiktok", "instagram", "twitch", "facebook", "other"];
-
-    return allPlatforms.map((platform) => {
-      const existing = result.find((r) => r.platform === platform);
-      return (
-        existing || {
-          platform,
-          amount: 0,
-          percentage: 0,
-          growth: 0,
-        }
-      );
     });
   },
 
   async getContentPerformance(
     organizationId: string,
     limit: number,
-    orderBy: "revenue" | "views" | "engagement",
+    orderBy: OrderBy,
     page: number,
+    platform?: Platform,
+    status?:
+      | "idea"
+      | "roteiro"
+      | "gravacao"
+      | "edicao"
+      | "pronto"
+      | "agendado"
+      | "publicado"
+      | "arquivado",
   ): Promise<ContentPerformance> {
     const offset = (page - 1) * limit;
 
-    // Primeiro, criar uma subconsulta para agregar a receita por contentItemId
-    const revenueSubquery = db
-      .select({
-        contentItemId: revenueEntriesInApp.contentItemId,
-        totalRevenue: sum(revenueEntriesInApp.amount).as("total_revenue"),
-      })
-      .from(revenueEntriesInApp)
-      .where(eq(revenueEntriesInApp.organizationId, organizationId))
-      .groupBy(revenueEntriesInApp.contentItemId)
-      .as("revenue");
+    // Subconsulta de receita
+    const revenueSubquery = db.$with("revenue_by_content").as(
+      db
+        .select({
+          contentItemId: revenueEntriesInApp.contentItemId,
+          totalRevenue: sum(revenueEntriesInApp.amount).as("total_revenue"),
+        })
+        .from(revenueEntriesInApp)
+        .where(eq(revenueEntriesInApp.organizationId, organizationId))
+        .groupBy(revenueEntriesInApp.contentItemId),
+    );
 
-    const contentPerformance = await db
+    const conditions = [eq(contentItemsInApp.organizationId, organizationId)];
+    if (platform) conditions.push(eq(contentItemsInApp.platform, platform));
+    if (status) conditions.push(eq(contentItemsInApp.status, status));
+
+    const content = await db
+      .with(revenueSubquery)
       .select({
         id: contentItemsInApp.id,
         title: contentItemsInApp.title,
         platform: contentItemsInApp.platform,
         revenue: revenueSubquery.totalRevenue,
-        views:
-          sql`COALESCE((${contentItemsInApp.metadata}->>'views')::integer, 0)`.as(
-            "views",
-          ),
-        engagement:
-          sql`COALESCE((${contentItemsInApp.metadata}->>'engagement')::float, 0)`.as(
-            "engagement",
-          ),
+        views: sql<number>`COALESCE((${contentItemsInApp.metadata}->>'views')::integer, 0)`,
+        engagement: sql<number>`COALESCE((${contentItemsInApp.metadata}->>'engagement')::float, 0)`,
         status: contentItemsInApp.status,
         publishedAt: contentItemsInApp.publishedAt,
       })
@@ -407,31 +403,26 @@ export const DashboardRepository = {
         revenueSubquery,
         eq(contentItemsInApp.id, revenueSubquery.contentItemId),
       )
-      .where(eq(contentItemsInApp.organizationId, organizationId))
+      .where(and(...conditions))
       .orderBy(
-        desc(
-          sql`${
-            orderBy === "revenue"
-              ? revenueSubquery.totalRevenue
-              : orderBy === "views"
-                ? sql`views`
-                : sql`engagement`
-          }`,
-        ),
+        orderBy === "revenue"
+          ? desc(revenueSubquery.totalRevenue)
+          : orderBy === "views"
+            ? desc(sql`views`)
+            : desc(sql`engagement`),
       )
       .limit(limit)
-      .offset(offset)
-      .execute();
+      .offset(offset);
 
-    return contentPerformance.map((item) => ({
+    return content.map((item) => ({
       id: item.id,
       title: item.title,
-      platform: item.platform as any,
+      platform: item.platform as Platform,
       revenue: Number(item.revenue || 0),
-      views: Number(item.views || 0),
-      engagement: Number(item.engagement || 0),
+      views: item.views,
+      engagement: item.engagement,
       status: item.status as any,
-      published_at: item.publishedAt ? item.publishedAt : null,
+      published_at: item.publishedAt || null,
     }));
   },
 
@@ -440,11 +431,29 @@ export const DashboardRepository = {
     days: number,
     page: number,
     limit: number,
+    platform?: Platform,
   ): Promise<UpcomingContent> {
     const offset = (page - 1) * limit;
     const endDate = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
 
-    const upcomingContent = await db
+    const conditions = [
+      eq(contentItemsInApp.organizationId, organizationId),
+      inArray(contentItemsInApp.status, [
+        "agendado",
+        "pronto",
+        "edicao",
+        "roteiro",
+        "gravacao",
+      ]),
+      gte(contentItemsInApp.scheduledAt, new Date().toISOString()),
+      lte(contentItemsInApp.scheduledAt, endDate.toISOString()),
+    ];
+
+    if (platform) {
+      conditions.push(eq(contentItemsInApp.platform, platform));
+    }
+
+    const content = await db
       .select({
         id: contentItemsInApp.id,
         title: contentItemsInApp.title,
@@ -455,30 +464,16 @@ export const DashboardRepository = {
       })
       .from(contentItemsInApp)
       .leftJoin(usersInApp, eq(contentItemsInApp.createdBy, usersInApp.id))
-      .where(
-        and(
-          eq(contentItemsInApp.organizationId, organizationId),
-          inArray(contentItemsInApp.status, [
-            "agendado",
-            "pronto",
-            "edicao",
-            "roteiro",
-            "gravacao",
-          ]),
-          gte(contentItemsInApp.scheduledAt, new Date().toISOString()),
-          lte(contentItemsInApp.scheduledAt, endDate.toISOString()),
-        ),
-      )
+      .where(and(...conditions))
       .orderBy(asc(contentItemsInApp.scheduledAt))
       .limit(limit)
-      .offset(offset)
-      .execute();
+      .offset(offset);
 
-    return upcomingContent.map((item) => ({
+    return content.map((item) => ({
       id: item.id,
       title: item.title,
-      platform: item.platform as any,
-      scheduled_at: item.scheduledAt ? item.scheduledAt : null,
+      platform: item.platform as Platform,
+      scheduled_at: item.scheduledAt || null,
       status: item.status as any,
       assigned_to: item.assignedTo,
     }));
@@ -486,19 +481,23 @@ export const DashboardRepository = {
 
   async getPendingTasks(
     organizationId: string,
-    statuses: readonly (
-      | "todo"
-      | "in_progress"
-      | "blocked"
-      | "done"
-      | "archived"
-    )[],
+    statuses: TaskStatus[],
     page: number,
     limit: number,
+    priority?: number,
   ): Promise<PendingTasks> {
     const offset = (page - 1) * limit;
 
-    const pendingTasks = await db
+    const conditions = [
+      eq(tasksInApp.organizationId, organizationId),
+      inArray(tasksInApp.status, statuses),
+    ];
+
+    if (priority !== undefined) {
+      conditions.push(eq(tasksInApp.priority, priority));
+    }
+
+    const tasks = await db
       .select({
         id: tasksInApp.id,
         title: tasksInApp.title,
@@ -508,10 +507,12 @@ export const DashboardRepository = {
         assignedTo: {
           id: organizationMembersInApp.userId,
           name: usersInApp.name,
+          image: usersInApp.image,
         },
         contentItem: {
           id: contentItemsInApp.id,
           title: contentItemsInApp.title,
+          platform: contentItemsInApp.platform,
         },
       })
       .from(tasksInApp)
@@ -524,33 +525,29 @@ export const DashboardRepository = {
         contentItemsInApp,
         eq(tasksInApp.contentItemId, contentItemsInApp.id),
       )
-      .where(
-        and(
-          eq(tasksInApp.organizationId, organizationId),
-          inArray(tasksInApp.status, statuses),
-        ),
-      )
+      .where(and(...conditions))
       .orderBy(desc(tasksInApp.priority), asc(tasksInApp.dueDate))
       .limit(limit)
-      .offset(offset)
-      .execute();
+      .offset(offset);
 
-    return pendingTasks.map((task) => ({
+    return tasks.map((task) => ({
       id: task.id,
       title: task.title,
-      status: task.status as any,
+      status: task.status as TaskStatus,
       priority: task.priority ?? 0,
-      due_date: task.dueDate ? task.dueDate : null,
+      due_date: task.dueDate || null,
       assigned_to: task.assignedTo?.id
         ? {
             id: task.assignedTo.id,
-            name: task.assignedTo.name ?? "",
+            name: task.assignedTo.name || "",
+            image: task.assignedTo.image || null,
           }
         : null,
       content_item: task.contentItem?.id
         ? {
             id: task.contentItem.id,
             title: task.contentItem.title,
+            platform: task.contentItem.platform as Platform,
           }
         : null,
     }));
@@ -560,10 +557,18 @@ export const DashboardRepository = {
     organizationId: string,
     limit: number,
     page: number,
+    action?: string,
+    targetType?: string,
   ): Promise<RecentActivity> {
     const offset = (page - 1) * limit;
 
-    const recentActivity = await db
+    const conditions = [
+      sql`${auditLogInApp.organizationId} = ${organizationId}::uuid`,
+    ];
+    if (action) conditions.push(eq(auditLogInApp.action, action));
+    if (targetType) conditions.push(eq(auditLogInApp.tableName, targetType));
+
+    const activities = await db
       .select({
         id: auditLogInApp.id,
         user: {
@@ -582,44 +587,45 @@ export const DashboardRepository = {
         usersInApp,
         sql`${auditLogInApp.actorUserId}::uuid = ${usersInApp.id}::uuid`,
       )
-      .where(sql`${auditLogInApp.organizationId} = ${organizationId}::uuid`)
+      .where(and(...conditions))
       .orderBy(desc(auditLogInApp.createdAt))
       .limit(limit)
-      .offset(offset)
-      .execute();
+      .offset(offset);
 
-    // Obtém os nomes dos alvos com base no tipo
+    // Obtém os nomes dos alvos para cada atividade
     const result = await Promise.all(
-      recentActivity.map(async (activity) => {
+      activities.map(async (activity) => {
         let targetName = "";
 
         if (activity.targetId) {
           switch (activity.targetType) {
             case "content_items":
-              const content = await db
+              const [content] = await db
                 .select({ title: contentItemsInApp.title })
                 .from(contentItemsInApp)
                 .where(eq(contentItemsInApp.id, activity.targetId))
-                .execute();
-              targetName = content[0]?.title || "";
+                .limit(1);
+              targetName = content?.title || "";
               break;
+
             case "tasks":
-              const task = await db
+              const [task] = await db
                 .select({ title: tasksInApp.title })
                 .from(tasksInApp)
                 .where(eq(tasksInApp.id, activity.targetId))
-                .execute();
-              targetName = task[0]?.title || "";
+                .limit(1);
+              targetName = task?.title || "";
               break;
+
             case "revenue_entries":
-              const revenue = await db
+              const [revenue] = await db
                 .select({
                   externalReference: revenueEntriesInApp.externalReference,
                 })
                 .from(revenueEntriesInApp)
                 .where(eq(revenueEntriesInApp.id, activity.targetId))
-                .execute();
-              targetName = revenue[0]?.externalReference || "";
+                .limit(1);
+              targetName = revenue?.externalReference || "";
               break;
           }
         }
@@ -638,8 +644,8 @@ export const DashboardRepository = {
           target_type: activity.targetType,
           target_id: activity.targetId?.toString() || "",
           target_name: targetName,
-          timestamp: activity.timestamp ?? "",
-          metadata: activity.metadata ?? {},
+          timestamp: activity.timestamp || "",
+          metadata: activity.metadata || {},
         };
       }),
     );
@@ -649,12 +655,11 @@ export const DashboardRepository = {
 
   async getRevenueTrend(
     organizationId: string,
-    range: "day" | "week" | "month" | "quarter",
+    range: Range,
     period: number,
   ): Promise<RevenueTrend> {
-    // Gerar série temporal com base no intervalo e período
     const endDate = new Date();
-    let startDate = new Date();
+    const startDate = new Date();
 
     switch (range) {
       case "day":
@@ -671,28 +676,34 @@ export const DashboardRepository = {
         break;
     }
 
-    // Agrupar receita por intervalo
-    let dateFormat: string;
+    const format = getDateInterval(range); // ex: 'YYYY-MM'
+
+    let truncUnit;
     switch (range) {
       case "day":
-        dateFormat = "YYYY-MM-DD";
+        truncUnit = "day";
         break;
       case "week":
-        dateFormat = "IYYY-IW";
+        truncUnit = "week";
         break;
       case "month":
-        dateFormat = "YYYY-MM";
+        truncUnit = "month";
         break;
       case "quarter":
-        dateFormat = "YYYY-Q";
+        truncUnit = "quarter";
         break;
+      default:
+        truncUnit = "month";
     }
 
     const periodExpr = sql<string>`
-  TO_CHAR(${revenueEntriesInApp.receivedAt}, '${sql.raw(dateFormat)}')
-`;
+    TO_CHAR(
+      date_trunc(${truncUnit}, ${revenueEntriesInApp.receivedAt}),
+      ${format}
+    )
+  `;
 
-    const revenueTrend = await db
+    const revenueData = await db
       .select({
         period: periodExpr,
         revenue: sum(revenueEntriesInApp.amount),
@@ -701,46 +712,45 @@ export const DashboardRepository = {
       .where(
         and(
           eq(revenueEntriesInApp.organizationId, organizationId),
-          sql`${revenueEntriesInApp.receivedAt}::timestamptz BETWEEN ${startDate} AND ${endDate}`,
+          between(
+            revenueEntriesInApp.receivedAt,
+            startDate.toISOString(),
+            endDate.toISOString(),
+          ),
         ),
       )
-      .groupBy(periodExpr)
-      .orderBy(periodExpr)
-      .execute();
+      .groupBy(sql`1`)
+      .orderBy(sql`1`);
 
-    // Calcular crescimento
-    const result: RevenueTrend = [];
-    for (let i = 0; i < revenueTrend.length; i++) {
-      const current = revenueTrend[i];
-      const previous = revenueTrend[i - 1];
-      const growth = previous
-        ? ((Number(current?.revenue) - Number(previous.revenue)) /
-            Number(previous.revenue)) *
-          100
-        : null;
+    return revenueData.map((item, index) => {
+      const currentRevenue = Number(item.revenue ?? 0);
+      const previousRevenue =
+        index > 0 ? Number(revenueData[index - 1]?.revenue ?? 0) : 0;
 
-      result.push({
-        period: current?.period || "",
-        revenue: Number(current?.revenue || 0),
-        growth: growth ? Number(growth.toFixed(2)) : null,
-      });
-    }
+      const growth =
+        previousRevenue === 0
+          ? null
+          : ((currentRevenue - previousRevenue) / previousRevenue) * 100;
 
-    return result;
+      return {
+        period: item.period,
+        revenue: currentRevenue,
+        growth: growth !== null ? Number(growth.toFixed(2)) : null,
+      };
+    });
   },
 
   async getTasksDistribution(
     organizationId: string,
   ): Promise<TasksDistribution> {
-    const tasksDistribution = await db
+    const distribution = await db
       .select({
         status: tasksInApp.status,
         count: count(),
       })
       .from(tasksInApp)
       .where(eq(tasksInApp.organizationId, organizationId))
-      .groupBy(tasksInApp.status)
-      .execute();
+      .groupBy(tasksInApp.status);
 
     const result: TasksDistribution = {
       todo: 0,
@@ -750,24 +760,25 @@ export const DashboardRepository = {
       archived: 0,
     };
 
-    tasksDistribution.forEach((item) => {
+    distribution.forEach((item) => {
       const status = item.status as keyof TasksDistribution;
-      result[status] = item.count;
+      if (status in result) {
+        result[status] = item.count;
+      }
     });
 
     return result;
   },
 
   async getContentByStatus(organizationId: string): Promise<ContentByStatus> {
-    const contentByStatus = await db
+    const distribution = await db
       .select({
         status: contentItemsInApp.status,
         count: count(),
       })
       .from(contentItemsInApp)
       .where(eq(contentItemsInApp.organizationId, organizationId))
-      .groupBy(contentItemsInApp.status)
-      .execute();
+      .groupBy(contentItemsInApp.status);
 
     const result: ContentByStatus = {
       idea: 0,
@@ -780,9 +791,11 @@ export const DashboardRepository = {
       arquivado: 0,
     };
 
-    contentByStatus.forEach((item) => {
+    distribution.forEach((item) => {
       const status = item.status as keyof ContentByStatus;
-      result[status] = item.count;
+      if (status in result) {
+        result[status] = item.count;
+      }
     });
 
     return result;

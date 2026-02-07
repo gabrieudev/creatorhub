@@ -1,189 +1,199 @@
-import { UnauthorizedError } from "@/lib/errors";
-import type {
-  FastifyInstance,
-  FastifyPluginOptions,
-  FastifyRequest,
-} from "fastify";
+import type { FastifyInstance, FastifyPluginOptions } from "fastify";
+import { ZodError } from "zod";
+import { BadRequestError, UnauthorizedError } from "../../lib/errors";
 import {
+  dashboardStatsSchema,
+  revenueByPlatformSchema,
+  contentPerformanceSchema,
+  upcomingContentSchema,
+  pendingTasksSchema,
+  recentActivitySchema,
+  revenueTrendSchema,
+  tasksDistributionSchema,
+  contentByStatusSchema,
+  revenueByPlatformQuerySchema,
   contentPerformanceQuerySchema,
+  upcomingContentQuerySchema,
   pendingTasksQuerySchema,
   recentActivityQuerySchema,
-  revenueByPlatformQuerySchema,
   revenueTrendQuerySchema,
-  upcomingContentQuerySchema,
+  organizationIdQuerySchema,
 } from "./dashboard.dto";
 import { DashboardService } from "./dashboard.service";
 
-function guard(request: FastifyRequest) {
-  const session = (request as any).session;
-  if (!session || !session.user) {
-    throw new UnauthorizedError("Usuário não autenticado");
+function validateRequest<T>(schema: any, data: any): T {
+  try {
+    return schema.parse(data);
+  } catch (error) {
+    if (error instanceof ZodError) {
+      throw new BadRequestError("Dados inválidos: " + error.message);
+    }
+    throw error;
   }
+}
+
+function getUserId(request: any): string {
+  const userId = request.session?.user?.id;
+  if (!userId) {
+    throw new UnauthorizedError("Autenticação necessária");
+  }
+  return userId;
 }
 
 export default async function dashboardController(
   fastify: FastifyInstance,
   _opts: FastifyPluginOptions,
 ) {
+  // Dashboard stats
   fastify.get("/stats", async (request, reply) => {
-    guard(request);
-    const q = request.query as any;
-    const organizationId = q.organizationId as string;
-    const actorUserId = (request as any).session?.user?.id as
-      | string
-      | undefined;
+    try {
+      const query = validateRequest(
+        organizationIdQuerySchema,
+        request.query,
+      ) as { organizationId: string };
+      const userId = getUserId(request);
 
-    if (!actorUserId) {
-      throw new UnauthorizedError("Authentication required");
+      const stats = await DashboardService.getDashboardStats(
+        query.organizationId,
+        userId,
+      );
+      const validatedStats = dashboardStatsSchema.parse(stats);
+      return reply.send(validatedStats);
+    } catch (error) {
+      throw error;
     }
-
-    const stats = await DashboardService.getDashboardStats(
-      organizationId,
-      actorUserId,
-    );
-    return reply.send(stats);
   });
 
+  // Revenue by platform
   fastify.get("/revenue-by-platform", async (request, reply) => {
-    guard(request);
-    const q = request.query as any;
-    const query = revenueByPlatformQuerySchema.parse(q);
-    const actorUserId = (request as any).session?.user?.id as
-      | string
-      | undefined;
+    try {
+      const query = validateRequest(
+        revenueByPlatformQuerySchema,
+        request.query,
+      );
+      const userId = getUserId(request);
 
-    if (!actorUserId) {
-      throw new UnauthorizedError("Authentication required");
+      const result = await DashboardService.getRevenueByPlatform(query, userId);
+      const validatedResult = revenueByPlatformSchema.parse(result);
+      return reply.send(validatedResult);
+    } catch (error) {
+      throw error;
     }
-
-    const result = await DashboardService.getRevenueByPlatform(
-      query,
-      actorUserId,
-    );
-    return reply.send(result);
   });
 
+  // Content performance
   fastify.get("/content-performance", async (request, reply) => {
-    guard(request);
-    const q = request.query as any;
-    const query = contentPerformanceQuerySchema.parse(q);
-    const actorUserId = (request as any).session?.user?.id as
-      | string
-      | undefined;
+    try {
+      const query = validateRequest(
+        contentPerformanceQuerySchema,
+        request.query,
+      );
+      const userId = getUserId(request);
 
-    if (!actorUserId) {
-      throw new UnauthorizedError("Authentication required");
+      const result = await DashboardService.getContentPerformance(
+        query,
+        userId,
+      );
+      const validatedResult = contentPerformanceSchema.parse(result);
+      return reply.send(validatedResult);
+    } catch (error) {
+      throw error;
     }
-
-    const result = await DashboardService.getContentPerformance(
-      query,
-      actorUserId,
-    );
-    return reply.send(result);
   });
 
+  // Upcoming content
   fastify.get("/upcoming-content", async (request, reply) => {
-    guard(request);
-    const q = request.query as any;
-    const query = upcomingContentQuerySchema.parse(q);
-    const actorUserId = (request as any).session?.user?.id as
-      | string
-      | undefined;
+    try {
+      const query = validateRequest(upcomingContentQuerySchema, request.query);
+      const userId = getUserId(request);
 
-    if (!actorUserId) {
-      throw new UnauthorizedError("Authentication required");
+      const result = await DashboardService.getUpcomingContent(query, userId);
+      const validatedResult = upcomingContentSchema.parse(result);
+      return reply.send(validatedResult);
+    } catch (error) {
+      throw error;
     }
-
-    const result = await DashboardService.getUpcomingContent(
-      query,
-      actorUserId,
-    );
-    return reply.send(result);
   });
 
+  // Pending tasks
   fastify.get("/pending-tasks", async (request, reply) => {
-    guard(request);
-    const q = request.query as any;
-    const query = pendingTasksQuerySchema.parse(q);
-    const actorUserId = (request as any).session?.user?.id as
-      | string
-      | undefined;
+    try {
+      const query = validateRequest(pendingTasksQuerySchema, request.query);
+      const userId = getUserId(request);
 
-    if (!actorUserId) {
-      throw new UnauthorizedError("Authentication required");
+      const result = await DashboardService.getPendingTasks(query, userId);
+      const validatedResult = pendingTasksSchema.parse(result);
+      return reply.send(validatedResult);
+    } catch (error) {
+      throw error;
     }
-
-    const result = await DashboardService.getPendingTasks(query, actorUserId);
-    return reply.send(result);
   });
 
+  // Recent activity
   fastify.get("/recent-activity", async (request, reply) => {
-    guard(request);
-    const q = request.query as any;
-    const query = recentActivityQuerySchema.parse(q);
-    const actorUserId = (request as any).session?.user?.id as
-      | string
-      | undefined;
+    try {
+      const query = validateRequest(recentActivityQuerySchema, request.query);
+      const userId = getUserId(request);
 
-    if (!actorUserId) {
-      throw new UnauthorizedError("Authentication required");
+      const result = await DashboardService.getRecentActivity(query, userId);
+      const validatedResult = recentActivitySchema.parse(result);
+      return reply.send(validatedResult);
+    } catch (error) {
+      throw error;
     }
-
-    const result = await DashboardService.getRecentActivity(query, actorUserId);
-    return reply.send(result);
   });
 
+  // Revenue trend
   fastify.get("/revenue-trend", async (request, reply) => {
-    guard(request);
-    const q = request.query as any;
-    const query = revenueTrendQuerySchema.parse(q);
-    const actorUserId = (request as any).session?.user?.id as
-      | string
-      | undefined;
+    try {
+      const query = validateRequest(revenueTrendQuerySchema, request.query);
+      const userId = getUserId(request);
 
-    if (!actorUserId) {
-      throw new UnauthorizedError("Authentication required");
+      const result = await DashboardService.getRevenueTrend(query, userId);
+      const validatedResult = revenueTrendSchema.parse(result);
+      return reply.send(validatedResult);
+    } catch (error) {
+      throw error;
     }
-
-    const result = await DashboardService.getRevenueTrend(query, actorUserId);
-    return reply.send(result);
   });
 
+  // Tasks distribution
   fastify.get("/tasks-distribution", async (request, reply) => {
-    guard(request);
-    const q = request.query as any;
-    const organizationId = q.organizationId as string;
-    const actorUserId = (request as any).session?.user?.id as
-      | string
-      | undefined;
+    try {
+      const query = validateRequest(
+        organizationIdQuerySchema,
+        request.query,
+      ) as { organizationId: string };
+      const userId = getUserId(request);
 
-    if (!actorUserId) {
-      throw new UnauthorizedError("Authentication required");
+      const result = await DashboardService.getTasksDistribution(
+        query.organizationId,
+        userId,
+      );
+      const validatedResult = tasksDistributionSchema.parse(result);
+      return reply.send(validatedResult);
+    } catch (error) {
+      throw error;
     }
-
-    const result = await DashboardService.getTasksDistribution(
-      organizationId,
-      actorUserId,
-    );
-    return reply.send(result);
   });
 
+  // Content by status
   fastify.get("/content-by-status", async (request, reply) => {
-    guard(request);
-    const q = request.query as any;
-    const organizationId = q.organizationId as string;
-    const actorUserId = (request as any).session?.user?.id as
-      | string
-      | undefined;
+    try {
+      const query = validateRequest(
+        organizationIdQuerySchema,
+        request.query,
+      ) as { organizationId: string };
+      const userId = getUserId(request);
 
-    if (!actorUserId) {
-      throw new UnauthorizedError("Authentication required");
+      const result = await DashboardService.getContentByStatus(
+        query.organizationId,
+        userId,
+      );
+      const validatedResult = contentByStatusSchema.parse(result);
+      return reply.send(validatedResult);
+    } catch (error) {
+      throw error;
     }
-
-    const result = await DashboardService.getContentByStatus(
-      organizationId,
-      actorUserId,
-    );
-    return reply.send(result);
   });
 }

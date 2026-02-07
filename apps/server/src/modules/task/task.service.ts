@@ -44,17 +44,17 @@ function getStatusTimestamps(
   const timestamps: { startedAt?: string; completedAt?: string | null } = {};
   const now = new Date().toISOString();
 
-  // Set startedAt when moving to active status
+  // Define startedAt quando mover para status ativo
   if (ACTIVE_STATUSES.includes(newStatus) && !existingStartedAt) {
     timestamps.startedAt = now;
   }
 
-  // Set completedAt when moving to completed status
+  // Define completedAt quando mover para status concluído
   if (COMPLETED_STATUSES.includes(newStatus) && !existingCompletedAt) {
     timestamps.completedAt = now;
   }
 
-  // Clear completedAt when moving away from completed status
+  // Limpa timestamps se mover de status concluído para outro status
   if (
     COMPLETED_STATUSES.includes(currentStatus) &&
     !COMPLETED_STATUSES.includes(newStatus)
@@ -71,7 +71,7 @@ async function validateOrganizationMembership(
   requireAuth: boolean = true,
 ) {
   if (requireAuth && !userId) {
-    throw new ForbiddenError("Authentication required");
+    throw new ForbiddenError("Autenticação necessária");
   }
 
   const membership = await OrganizationMemberRepository.findByOrgAndUser(
@@ -80,7 +80,7 @@ async function validateOrganizationMembership(
   );
 
   if (!membership) {
-    throw new ForbiddenError("Not a member of this organization");
+    throw new ForbiddenError("Usuário não é membro desta organização");
   }
 
   return membership;
@@ -90,7 +90,7 @@ async function validateAssignee(assignedTo: string, organizationId: string) {
   const assignee = await OrganizationMemberRepository.findById(assignedTo);
 
   if (!assignee || String(assignee.organizationId) !== organizationId) {
-    throw new BadRequestError("Assigned member not found in organization");
+    throw new BadRequestError("Membro designado não encontrado na organização");
   }
 }
 
@@ -112,22 +112,22 @@ export const TaskService = {
       data = createTaskSchema.parse(input);
     } catch (err) {
       if (err instanceof ZodError) throw err;
-      throw new BadRequestError("Invalid payload");
+      throw new BadRequestError("Payload inválido");
     }
 
-    // Validate organization
+    // Valida organização
     const org = await OrganizationRepository.findById(organizationId);
-    if (!org) throw new NotFoundError("Organization not found");
+    if (!org) throw new NotFoundError("Organização não encontrada");
 
-    // Validate actor membership
+    // Valida associação do ator
     await validateOrganizationMembership(organizationId, actorUserId, true);
 
-    // Validate assignee if provided
+    // Valida membro designado, se fornecido
     if (data.assignedTo) {
       await validateAssignee(data.assignedTo, organizationId);
     }
 
-    // Prepare payload with timestamps
+    // Normaliza status e define timestamps iniciais
     const status = normalizeStatus(data.status);
     const timestamps = getStatusTimestamps("todo", status);
 
@@ -143,7 +143,7 @@ export const TaskService = {
 
   async getById(id: string, actorUserId?: string) {
     const task = await TaskRepository.findById(id);
-    if (!task) throw new NotFoundError("Task not found");
+    if (!task) throw new NotFoundError("Tarefa não encontrada");
 
     await validateOrganizationMembership(
       String(task.organizationId),
@@ -179,7 +179,7 @@ export const TaskService = {
     pagination?: { limit?: number; offset?: number },
   ) {
     const assignee = await OrganizationMemberRepository.findById(assignedTo);
-    if (!assignee) throw new NotFoundError("Assigned member not found");
+    if (!assignee) throw new NotFoundError("Membro designado não encontrado");
 
     await validateOrganizationMembership(
       String(assignee.organizationId),
@@ -203,11 +203,11 @@ export const TaskService = {
       data = updateTaskSchema.parse(input);
     } catch (err) {
       if (err instanceof ZodError) throw err;
-      throw new BadRequestError("Invalid payload");
+      throw new BadRequestError("Payload inválido");
     }
 
     const existing = await TaskRepository.findById(id);
-    if (!existing) throw new NotFoundError("Task not found");
+    if (!existing) throw new NotFoundError("Tarefa não encontrada");
 
     const actorMembership = await validateOrganizationMembership(
       String(existing.organizationId),
@@ -215,19 +215,19 @@ export const TaskService = {
       true,
     );
 
-    // Check permissions
+    // Valida permissões
     if (!canModifyTask(actorMembership, existing)) {
       throw new ForbiddenError(
-        "Only owner, creator or assignee can update the task",
+        "Somente criador ou membro da equipe podem modificar a tarefa",
       );
     }
 
-    // Validate new assignee if changing
+    // Valida novo membro designado, se estiver mudando
     if (data.assignedTo !== undefined && data.assignedTo !== null) {
       await validateAssignee(data.assignedTo, String(existing.organizationId));
     }
 
-    // Handle status transitions
+    // Se o status estiver mudando, normaliza e ajusta timestamps
     const newStatus = data.status ? normalizeStatus(data.status) : undefined;
     if (newStatus) {
       const currentStatus = normalizeStatus(existing.status);
@@ -243,14 +243,15 @@ export const TaskService = {
     }
 
     const updated = await TaskRepository.update(id, data);
-    if (!updated) throw new NotFoundError("Task not found after update");
+    if (!updated)
+      throw new NotFoundError("Tarefa não encontrada após atualização");
 
     return updated;
   },
 
   async remove(id: string, actorUserId?: string) {
     const existing = await TaskRepository.findById(id);
-    if (!existing) throw new NotFoundError("Task not found");
+    if (!existing) throw new NotFoundError("Tarefa não encontrada");
 
     const actorMembership = await validateOrganizationMembership(
       String(existing.organizationId),
@@ -258,10 +259,10 @@ export const TaskService = {
       true,
     );
 
-    // Check permissions
+    // Valida permissões
     if (!canModifyTask(actorMembership, existing)) {
       throw new ForbiddenError(
-        "Only owner, creator or assignee can delete the task",
+        "Somente criador ou membro da equipe podem modificar a tarefa",
       );
     }
 
