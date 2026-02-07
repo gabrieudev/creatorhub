@@ -17,6 +17,7 @@
     "better-auth": "catalog:",
     "dotenv": "catalog:",
     "fastify": "^5.3.3",
+    "fastify-type-provider-zod": "^6.1.0",
     "zod": "catalog:"
   },
   "devDependencies": {

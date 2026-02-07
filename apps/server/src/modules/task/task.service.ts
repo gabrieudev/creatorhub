@@ -14,18 +14,95 @@ import {
   ForbiddenError,
 } from "../../lib/errors";
 
-/**
- * Business rules for tasks:
- * - create: only organization members
- * - assignedTo must be an existing organization_member.id for same org
- * - update: only owner OR creator OR assignee
- * - setting status to 'in_progress' sets startedAt if not present
- * - setting status to 'completed' sets completedAt if not present
- * - unsetting 'completed' clears completedAt
- */
+export type TaskStatus =
+  | "todo"
+  | "in_progress"
+  | "blocked"
+  | "done"
+  | "archived";
 
-function normalizeStatus(s: string | undefined | null) {
-  return s ? String(s).toLowerCase() : undefined;
+const ACTIVE_STATUSES: TaskStatus[] = ["todo", "in_progress", "blocked"];
+const COMPLETED_STATUSES: TaskStatus[] = ["done"];
+
+function normalizeStatus(s: string | undefined | null): TaskStatus {
+  if (!s) return "todo";
+
+  const normalized = s.toLowerCase().trim();
+
+  if (normalized === "started") return "in_progress";
+  if (normalized === "completed") return "done";
+
+  return normalized as TaskStatus;
+}
+
+function getStatusTimestamps(
+  currentStatus: TaskStatus,
+  newStatus: TaskStatus,
+  existingStartedAt?: string | null,
+  existingCompletedAt?: string | null,
+) {
+  const timestamps: { startedAt?: string; completedAt?: string | null } = {};
+  const now = new Date().toISOString();
+
+  // Set startedAt when moving to active status
+  if (ACTIVE_STATUSES.includes(newStatus) && !existingStartedAt) {
+    timestamps.startedAt = now;
+  }
+
+  // Set completedAt when moving to completed status
+  if (COMPLETED_STATUSES.includes(newStatus) && !existingCompletedAt) {
+    timestamps.completedAt = now;
+  }
+
+  // Clear completedAt when moving away from completed status
+  if (
+    COMPLETED_STATUSES.includes(currentStatus) &&
+    !COMPLETED_STATUSES.includes(newStatus)
+  ) {
+    timestamps.completedAt = null;
+  }
+
+  return timestamps;
+}
+
+async function validateOrganizationMembership(
+  organizationId: string,
+  userId?: string,
+  requireAuth: boolean = true,
+) {
+  if (requireAuth && !userId) {
+    throw new ForbiddenError("Authentication required");
+  }
+
+  const membership = await OrganizationMemberRepository.findByOrgAndUser(
+    organizationId,
+    userId ?? "",
+  );
+
+  if (!membership) {
+    throw new ForbiddenError("Not a member of this organization");
+  }
+
+  return membership;
+}
+
+async function validateAssignee(assignedTo: string, organizationId: string) {
+  const assignee = await OrganizationMemberRepository.findById(assignedTo);
+
+  if (!assignee || String(assignee.organizationId) !== organizationId) {
+    throw new BadRequestError("Assigned member not found in organization");
+  }
+}
+
+function canModifyTask(
+  actorMembership: any,
+  task: { createdBy: string | null; assignedTo?: string | null },
+): boolean {
+  const isOwner = actorMembership.isOwner;
+  const isCreator = String(task.createdBy) === actorMembership.userId;
+  const isAssignee = String(task.assignedTo) === actorMembership.id;
+
+  return isOwner || isCreator || isAssignee;
 }
 
 export const TaskService = {
@@ -38,110 +115,86 @@ export const TaskService = {
       throw new BadRequestError("Invalid payload");
     }
 
-    // ensure org exists
+    // Validate organization
     const org = await OrganizationRepository.findById(organizationId);
     if (!org) throw new NotFoundError("Organization not found");
 
-    // require authenticated actor
-    if (!actorUserId) throw new ForbiddenError("Authentication required");
-    const actorMembership = await OrganizationMemberRepository.findByOrgAndUser(
-      organizationId,
-      actorUserId,
-    );
-    if (!actorMembership)
-      throw new ForbiddenError("Not a member of this organization");
+    // Validate actor membership
+    await validateOrganizationMembership(organizationId, actorUserId, true);
 
-    // if assignedTo provided -> validate member exists and belongs to org
+    // Validate assignee if provided
     if (data.assignedTo) {
-      const assignee = await OrganizationMemberRepository.findById(
-        data.assignedTo,
-      );
-      if (!assignee || String(assignee.organizationId) !== organizationId) {
-        throw new BadRequestError("Assigned member not found in organization");
-      }
+      await validateAssignee(data.assignedTo, organizationId);
     }
 
-    // handle status timestamps
+    // Prepare payload with timestamps
     const status = normalizeStatus(data.status);
-    const payload: CreateTaskInput & { createdBy: string } = {
+    const timestamps = getStatusTimestamps("todo", status);
+
+    const payload = {
       ...data,
-      createdBy: actorUserId,
+      status,
+      createdBy: actorUserId!,
+      ...timestamps,
     };
 
-    if (status === "in_progress" || status === "started") {
-      (payload as any).startedAt = new Date().toISOString();
-    }
-    if (status === "completed" || status === "done") {
-      (payload as any).completedAt = new Date().toISOString();
-    }
-
-    const created = await TaskRepository.create(organizationId, payload);
-    return created;
+    return await TaskRepository.create(organizationId, payload);
   },
 
   async getById(id: string, actorUserId?: string) {
-    const item = await TaskRepository.findById(id);
-    if (!item) throw new NotFoundError("Task not found");
+    const task = await TaskRepository.findById(id);
+    if (!task) throw new NotFoundError("Task not found");
 
-    // restrict to members for privacy
-    const membership = await OrganizationMemberRepository.findByOrgAndUser(
-      String(item.organizationId),
-      actorUserId ?? "",
+    await validateOrganizationMembership(
+      String(task.organizationId),
+      actorUserId,
+      true,
     );
-    if (!membership)
-      throw new ForbiddenError("Not a member of this organization");
-    return item;
+
+    return task;
   },
 
   async listByOrganization(
     organizationId: string,
     actorUserId?: string,
-    opts?: {
+    filters?: {
       limit?: number;
       offset?: number;
-      status?: "todo" | "in_progress" | "blocked" | "done" | "archived";
+      status?: TaskStatus;
       assignedTo?: string;
     },
   ) {
-    if (actorUserId) {
-      const membership = await OrganizationMemberRepository.findByOrgAndUser(
-        organizationId,
-        actorUserId,
-      );
-      if (!membership)
-        throw new ForbiddenError("Not a member of this organization");
-    }
-    return TaskRepository.listByOrganization(organizationId, opts);
+    await validateOrganizationMembership(
+      organizationId,
+      actorUserId,
+      !!actorUserId,
+    );
+
+    return TaskRepository.listByOrganization(organizationId, filters);
   },
 
   async listByAssignedTo(
     assignedTo: string,
     actorUserId?: string,
-    opts?: { limit?: number; offset?: number },
+    pagination?: { limit?: number; offset?: number },
   ) {
-    // ensure actor is member of same org as assignedTo
     const assignee = await OrganizationMemberRepository.findById(assignedTo);
     if (!assignee) throw new NotFoundError("Assigned member not found");
-    if (actorUserId) {
-      const actorMembership =
-        await OrganizationMemberRepository.findByOrgAndUser(
-          String(assignee.organizationId),
-          actorUserId,
-        );
-      if (!actorMembership)
-        throw new ForbiddenError("Not a member of this organization");
-    }
-    return TaskRepository.listByAssignedTo(assignedTo, opts);
+
+    await validateOrganizationMembership(
+      String(assignee.organizationId),
+      actorUserId,
+      !!actorUserId,
+    );
+
+    return TaskRepository.listByAssignedTo(assignedTo, pagination);
   },
 
   async listByContentItem(
     contentItemId: string,
-    actorUserId?: string,
-    opts?: { limit?: number; offset?: number },
+    pagination?: { limit?: number; offset?: number },
   ) {
-    // check content item and membership of its org
-    // we can rely on ContentItemRepository if needed; skip check for brevity but ensure actor is member of org via content item lookup if needed
-    return TaskRepository.listByContentItem(contentItemId, opts);
+    return TaskRepository.listByContentItem(contentItemId, pagination);
   },
 
   async update(id: string, input: unknown, actorUserId?: string) {
@@ -156,66 +209,42 @@ export const TaskService = {
     const existing = await TaskRepository.findById(id);
     if (!existing) throw new NotFoundError("Task not found");
 
-    if (!actorUserId) throw new ForbiddenError("Authentication required");
-    const actorMembership = await OrganizationMemberRepository.findByOrgAndUser(
+    const actorMembership = await validateOrganizationMembership(
       String(existing.organizationId),
       actorUserId,
+      true,
     );
-    if (!actorMembership)
-      throw new ForbiddenError("Not a member of this organization");
 
-    const isOwner = actorMembership.isOwner;
-    const isCreator = String(existing.createdBy) === actorUserId;
-    const isAssignee = String(existing.assignedTo) === actorMembership.id;
-
-    if (!isOwner && !isCreator && !isAssignee)
+    // Check permissions
+    if (!canModifyTask(actorMembership, existing)) {
       throw new ForbiddenError(
         "Only owner, creator or assignee can update the task",
       );
-
-    // If changing assignedTo, validate target is member in same org
-    if ((input as any).assignedTo !== undefined) {
-      const at = (input as any).assignedTo;
-      if (at !== null) {
-        const assignee = await OrganizationMemberRepository.findById(at);
-        if (
-          !assignee ||
-          String(assignee.organizationId) !== String(existing.organizationId)
-        ) {
-          throw new BadRequestError(
-            "Assigned member not found in organization",
-          );
-        }
-      }
     }
 
-    // Status timestamp transitions
-    if (data.status !== undefined) {
-      const newStatus = normalizeStatus(data.status);
-      const oldStatus = normalizeStatus(existing.status);
+    // Validate new assignee if changing
+    if (data.assignedTo !== undefined && data.assignedTo !== null) {
+      await validateAssignee(data.assignedTo, String(existing.organizationId));
+    }
 
-      if (
-        (newStatus === "in_progress" || newStatus === "started") &&
-        !existing.startedAt
-      ) {
-        (data as any).startedAt = new Date().toISOString();
-      }
+    // Handle status transitions
+    const newStatus = data.status ? normalizeStatus(data.status) : undefined;
+    if (newStatus) {
+      const currentStatus = normalizeStatus(existing.status);
+      const timestamps = getStatusTimestamps(
+        currentStatus,
+        newStatus,
+        existing.startedAt,
+        existing.completedAt,
+      );
 
-      if (
-        (newStatus === "completed" || newStatus === "done") &&
-        !existing.completedAt
-      ) {
-        (data as any).completedAt = new Date().toISOString();
-      }
-
-      // if moving from completed -> not completed, clear completedAt
-      if (oldStatus === "completed" && newStatus !== "completed") {
-        (data as any).completedAt = null;
-      }
+      Object.assign(data, timestamps);
+      data.status = newStatus;
     }
 
     const updated = await TaskRepository.update(id, data);
     if (!updated) throw new NotFoundError("Task not found after update");
+
     return updated;
   },
 
@@ -223,24 +252,19 @@ export const TaskService = {
     const existing = await TaskRepository.findById(id);
     if (!existing) throw new NotFoundError("Task not found");
 
-    if (!actorUserId) throw new ForbiddenError("Authentication required");
-    const actorMembership = await OrganizationMemberRepository.findByOrgAndUser(
+    const actorMembership = await validateOrganizationMembership(
       String(existing.organizationId),
       actorUserId,
+      true,
     );
-    if (!actorMembership)
-      throw new ForbiddenError("Not a member of this organization");
 
-    const isOwner = actorMembership.isOwner;
-    const isCreator = String(existing.createdBy) === actorUserId;
-    const isAssignee = String(existing.assignedTo) === actorMembership.id;
-
-    if (!isOwner && !isCreator && !isAssignee)
+    // Check permissions
+    if (!canModifyTask(actorMembership, existing)) {
       throw new ForbiddenError(
         "Only owner, creator or assignee can delete the task",
       );
+    }
 
     await TaskRepository.delete(id);
-    return;
   },
 };
