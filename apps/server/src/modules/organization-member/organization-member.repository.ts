@@ -47,7 +47,7 @@ export const OrganizationMemberRepository = {
       .from(organizationMembersInApp)
       .innerJoin(usersInApp, eq(usersInApp.id, organizationMembersInApp.userId))
       .leftJoin(rolesInApp, eq(rolesInApp.id, organizationMembersInApp.roleId))
-      .where(eq(organizationMembersInApp.id, id))
+      .where(sql`${organizationMembersInApp.id}::uuid = ${id}`)
       .orderBy(desc(organizationMembersInApp.joinedAt));
 
     return (
@@ -75,12 +75,18 @@ export const OrganizationMemberRepository = {
         },
       })
       .from(organizationMembersInApp)
-      .innerJoin(usersInApp, eq(usersInApp.id, organizationMembersInApp.userId))
-      .leftJoin(rolesInApp, eq(rolesInApp.id, organizationMembersInApp.roleId))
+      .innerJoin(
+        usersInApp,
+        sql`${usersInApp.id} = ${organizationMembersInApp.userId}`,
+      )
+      .leftJoin(
+        rolesInApp,
+        sql`${rolesInApp.id}::uuid = ${organizationMembersInApp.roleId}::uuid`,
+      )
       .where(
         and(
-          eq(organizationMembersInApp.organizationId, organizationId),
-          eq(organizationMembersInApp.userId, userId),
+          sql`${organizationMembersInApp.organizationId}::uuid = ${organizationId}::uuid`,
+          sql`${organizationMembersInApp.userId} = ${userId}`,
         ),
       )
       .orderBy(desc(organizationMembersInApp.joinedAt));
@@ -111,7 +117,10 @@ export const OrganizationMemberRepository = {
       .set(set)
       .where(
         and(
-          eq(organizationMembersInApp.organizationId, organizationId),
+          eq(
+            sql`${organizationMembersInApp.organizationId}::uuid`,
+            organizationId,
+          ),
           eq(organizationMembersInApp.userId, userId),
         ),
       )
@@ -131,7 +140,7 @@ export const OrganizationMemberRepository = {
     const [row] = await db
       .update(organizationMembersInApp)
       .set(set)
-      .where(eq(organizationMembersInApp.id, id))
+      .where(sql`${organizationMembersInApp.id}::uuid = ${id}`)
       .returning();
 
     return row ?? null;
@@ -142,7 +151,10 @@ export const OrganizationMemberRepository = {
       .delete(organizationMembersInApp)
       .where(
         and(
-          eq(organizationMembersInApp.organizationId, organizationId),
+          eq(
+            sql`${organizationMembersInApp.organizationId}::uuid`,
+            organizationId,
+          ),
           eq(organizationMembersInApp.userId, userId),
         ),
       );
@@ -151,7 +163,7 @@ export const OrganizationMemberRepository = {
   async delete(id: string) {
     await db
       .delete(organizationMembersInApp)
-      .where(eq(organizationMembersInApp.id, id));
+      .where(sql`${organizationMembersInApp.id}::uuid = ${id}`);
   },
 
   async findOwners(organizationId: string) {
@@ -174,7 +186,10 @@ export const OrganizationMemberRepository = {
       .leftJoin(rolesInApp, eq(rolesInApp.id, organizationMembersInApp.roleId))
       .where(
         and(
-          eq(organizationMembersInApp.organizationId, organizationId),
+          eq(
+            sql`${organizationMembersInApp.organizationId}::uuid`,
+            organizationId,
+          ),
           eq(organizationMembersInApp.isOwner, true),
         ),
       )

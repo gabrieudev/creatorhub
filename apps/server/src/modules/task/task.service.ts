@@ -142,16 +142,16 @@ export const TaskService = {
   },
 
   async getById(id: string, actorUserId?: string) {
-    const task = await TaskRepository.findById(id);
-    if (!task) throw new NotFoundError("Tarefa não encontrada");
+    const result = await TaskRepository.findById(id);
+    if (!result) throw new NotFoundError("Tarefa não encontrada");
 
     await validateOrganizationMembership(
-      String(task.organizationId),
+      String(result.task.organizationId),
       actorUserId,
       true,
     );
 
-    return task;
+    return result.task;
   },
 
   async listByOrganization(
@@ -210,13 +210,13 @@ export const TaskService = {
     if (!existing) throw new NotFoundError("Tarefa não encontrada");
 
     const actorMembership = await validateOrganizationMembership(
-      String(existing.organizationId),
+      String(existing.task.organizationId),
       actorUserId,
       true,
     );
 
     // Valida permissões
-    if (!canModifyTask(actorMembership, existing)) {
+    if (!canModifyTask(actorMembership, existing.task)) {
       throw new ForbiddenError(
         "Somente criador ou membro da equipe podem modificar a tarefa",
       );
@@ -224,18 +224,21 @@ export const TaskService = {
 
     // Valida novo membro designado, se estiver mudando
     if (data.assignedTo !== undefined && data.assignedTo !== null) {
-      await validateAssignee(data.assignedTo, String(existing.organizationId));
+      await validateAssignee(
+        data.assignedTo,
+        String(existing.task.organizationId),
+      );
     }
 
     // Se o status estiver mudando, normaliza e ajusta timestamps
     const newStatus = data.status ? normalizeStatus(data.status) : undefined;
     if (newStatus) {
-      const currentStatus = normalizeStatus(existing.status);
+      const currentStatus = normalizeStatus(existing.task.status);
       const timestamps = getStatusTimestamps(
         currentStatus,
         newStatus,
-        existing.startedAt,
-        existing.completedAt,
+        existing.task.startedAt,
+        existing.task.completedAt,
       );
 
       Object.assign(data, timestamps);
@@ -254,13 +257,13 @@ export const TaskService = {
     if (!existing) throw new NotFoundError("Tarefa não encontrada");
 
     const actorMembership = await validateOrganizationMembership(
-      String(existing.organizationId),
+      String(existing.task.organizationId),
       actorUserId,
       true,
     );
 
     // Valida permissões
-    if (!canModifyTask(actorMembership, existing)) {
+    if (!canModifyTask(actorMembership, existing.task)) {
       throw new ForbiddenError(
         "Somente criador ou membro da equipe podem modificar a tarefa",
       );

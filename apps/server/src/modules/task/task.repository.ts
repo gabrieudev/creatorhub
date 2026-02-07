@@ -1,24 +1,28 @@
 import { db } from "@CreatorHub/db";
 import {
   contentItemsInApp,
+  organizationMembersInApp,
   tasksInApp,
-  usersInApp,
 } from "@CreatorHub/db/schema/schema";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 import type { CreateTaskInput, UpdateTaskInput } from "./task.dto";
 import type { TaskStatus } from "./task.service";
 
 type BaseTask = typeof tasksInApp.$inferSelect;
 
-const buildTaskQuery = () => {
+const baseTaskQuery = () => {
   return db
     .select({
       task: tasksInApp,
       assignedToUser: {
-        id: usersInApp.id,
-        name: usersInApp.name,
-        email: usersInApp.email,
-        image: usersInApp.image,
+        id: organizationMembersInApp.id,
+        userId: organizationMembersInApp.userId,
+        organizationId: organizationMembersInApp.organizationId,
+        roleId: organizationMembersInApp.roleId,
+        isOwner: organizationMembersInApp.isOwner,
+        joinedAt: organizationMembersInApp.joinedAt,
+        preferences: organizationMembersInApp.preferences,
+        flActive: organizationMembersInApp.flActive,
       },
       contentItem: {
         id: contentItemsInApp.id,
@@ -31,11 +35,17 @@ const buildTaskQuery = () => {
       },
     })
     .from(tasksInApp)
-    .leftJoin(usersInApp, eq(usersInApp.id, tasksInApp.assignedTo))
     .leftJoin(
       contentItemsInApp,
-      eq(contentItemsInApp.id, tasksInApp.contentItemId),
+      sql`${contentItemsInApp.id}::uuid = ${tasksInApp.contentItemId}::uuid`,
     );
+};
+
+const taskWithUserQuery = () => {
+  return baseTaskQuery().leftJoin(
+    organizationMembersInApp,
+    eq(organizationMembersInApp.id, sql`${tasksInApp.assignedTo}`),
+  );
 };
 
 export const TaskRepository = {
@@ -69,20 +79,12 @@ export const TaskRepository = {
     return task;
   },
 
-  async findById(id: string) {
-    const results = await buildTaskQuery()
-      .where(eq(tasksInApp.id, id))
+  async findById(taskId: string) {
+    const [task] = await taskWithUserQuery()
+      .where(eq(tasksInApp.id, taskId))
       .limit(1);
 
-    const result = results[0];
-    if (!result) return null;
-
-    const { task, assignedToUser, contentItem } = result;
-    return {
-      ...task,
-      assignedToUser: assignedToUser || null,
-      contentItem: contentItem || null,
-    };
+    return task;
   },
 
   async listByOrganization(
@@ -107,7 +109,7 @@ export const TaskRepository = {
       conditions.push(eq(tasksInApp.assignedTo, filters.assignedTo));
     }
 
-    const results = await buildTaskQuery()
+    const results = await taskWithUserQuery()
       .where(and(...conditions))
       .orderBy(asc(tasksInApp.dueDate))
       .limit(limit)
@@ -127,7 +129,7 @@ export const TaskRepository = {
     const limit = pagination?.limit ?? 50;
     const offset = pagination?.offset ?? 0;
 
-    const results = await buildTaskQuery()
+    const results = await taskWithUserQuery()
       .where(eq(tasksInApp.assignedTo, assignedTo))
       .orderBy(asc(tasksInApp.dueDate))
       .limit(limit)
@@ -147,7 +149,7 @@ export const TaskRepository = {
     const limit = pagination?.limit ?? 50;
     const offset = pagination?.offset ?? 0;
 
-    const results = await buildTaskQuery()
+    const results = await taskWithUserQuery()
       .where(eq(tasksInApp.contentItemId, contentItemId))
       .orderBy(asc(tasksInApp.dueDate))
       .limit(limit)
@@ -197,13 +199,15 @@ export const TaskRepository = {
     const [task] = await db
       .update(tasksInApp)
       .set(updateData)
-      .where(eq(tasksInApp.id, id))
+      .where(sql`${tasksInApp.id}::uuid = ${id}::uuid`)
       .returning();
 
     return task ?? null;
   },
 
   async delete(id: string): Promise<void> {
-    await db.delete(tasksInApp).where(eq(tasksInApp.id, id));
+    await db
+      .delete(tasksInApp)
+      .where(sql`${tasksInApp.id}::uuid = ${id}::uuid`);
   },
 };

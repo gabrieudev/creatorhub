@@ -3,7 +3,7 @@ import {
   organizationMembersInApp,
   organizationsInApp,
 } from "@CreatorHub/db/schema/schema";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { slugify } from "../../lib/utils";
 import type {
   CreateOrganizationInput,
@@ -40,7 +40,7 @@ export const OrganizationRepository = {
     const [row] = await db
       .select()
       .from(organizationsInApp)
-      .where(eq(organizationsInApp.id, id));
+      .where(sql`${organizationsInApp.id}::uuid = ${id}`);
 
     return row ?? null;
   },
@@ -95,7 +95,7 @@ export const OrganizationRepository = {
     const [row] = await db
       .update(organizationsInApp)
       .set(set)
-      .where(eq(organizationsInApp.id, id))
+      .where(sql`${organizationsInApp.id}::uuid = ${id}`)
       .returning();
 
     return row ?? null;

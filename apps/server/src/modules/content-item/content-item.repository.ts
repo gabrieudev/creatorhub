@@ -34,7 +34,7 @@ export const ContentItemRepository = {
     const [row] = await db
       .select()
       .from(contentItemsInApp)
-      .where(eq(contentItemsInApp.id, id));
+      .where(sql`${contentItemsInApp.id}::uuid = ${id}`);
     return row ?? null;
   },
 
@@ -104,12 +104,14 @@ export const ContentItemRepository = {
     const [row] = await db
       .update(contentItemsInApp)
       .set(set)
-      .where(eq(contentItemsInApp.id, id))
+      .where(sql`${contentItemsInApp.id}::uuid = ${id}`)
       .returning();
     return row ?? null;
   },
 
   async delete(id: string) {
-    await db.delete(contentItemsInApp).where(eq(contentItemsInApp.id, id));
+    await db
+      .delete(contentItemsInApp)
+      .where(sql`${contentItemsInApp.id}::uuid = ${id}`);
   },
 };

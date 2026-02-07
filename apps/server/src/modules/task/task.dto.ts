@@ -16,7 +16,7 @@ export const createTaskSchema = z.object({
     .uuid("Invalid content item ID")
     .optional()
     .nullable(),
-  status: z.string().optional(),
+  status: taskStatusEnum.default("todo"),
   priority: z.number().int().min(0).max(5).default(0),
   assignedTo: z.string().uuid("Invalid user ID").optional().nullable(),
   dueDate: z.string().datetime("Invalid date format").optional().nullable(),
