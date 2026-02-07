@@ -64,20 +64,26 @@ import type {
 
 interface NewTaskModalProps {
   organizationId?: string | null;
-  trigger?: React.ReactNode;
   openNewTaskModal: boolean;
   setOpenNewTaskModal: React.Dispatch<React.SetStateAction<boolean>>;
   refetchPendingTasks: (
     options?: RefetchOptions,
-  ) => Promise<QueryObserverResult<PendingTask[], Error>>;
+  ) => Promise<QueryObserverResult<Task[], Error>>;
+  contentItems: ContentItem[];
+  organizationMembers: OrganizationMember[];
+  isLoadingContentItems: boolean;
+  isLoadingOrganizationMembers: boolean;
 }
 
 export function NewTaskModal({
   organizationId,
-  trigger,
   openNewTaskModal,
   setOpenNewTaskModal,
   refetchPendingTasks,
+  contentItems,
+  organizationMembers,
+  isLoadingContentItems,
+  isLoadingOrganizationMembers,
 }: NewTaskModalProps) {
   const {
     form,
@@ -90,36 +96,34 @@ export function NewTaskModal({
     handleAddTag,
     handleRemoveTag,
     handleKeyDown,
-    contentSearchOpen,
-    setContentSearchOpen,
-    assigneeSearchOpen,
-    setAssigneeSearchOpen,
     selectedContentItem,
     selectedAssignee,
     modalVariants,
     tabContentVariants,
     taskStatusOptions,
     priorityOptions,
-    organizationMembers,
-    contentItems,
     isCreatingTask,
-    isLoadingContentItems,
-    isLoadingOrganizationMembers,
+    contentSearchOpen,
+    setContentSearchOpen,
+    assigneeSearchOpen,
+    setAssigneeSearchOpen,
   } = useNewTaskModal({
     organizationId,
     setOpenNewTaskModal,
     refetchPendingTasks,
+    contentItems,
+    organizationMembers,
+    isLoadingContentItems,
+    isLoadingOrganizationMembers,
   });
 
   return (
     <Dialog open={openNewTaskModal} onOpenChange={setOpenNewTaskModal}>
       <DialogTrigger asChild>
-        {trigger || (
-          <Button className="gap-2 cursor-pointer">
-            <Plus className="w-4 h-4" />
-            Nova Tarefa
-          </Button>
-        )}
+        <Button className="gap-2 cursor-pointer">
+          <Plus className="w-4 h-4" />
+          Nova Tarefa
+        </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-137.5 max-h-[90vh] overflow-y-auto">
         <motion.div

@@ -54,12 +54,12 @@ declare global {
   export interface Task {
     id: string;
     organization_id: string;
-    content_item_id?: string;
+    content_item?: ContentItem;
     title: string;
     description?: string;
-    status: TaskStatus;
+    status: "todo" | "in_progress" | "blocked" | "done" | "archived";
     priority: number;
-    assigned_to?: string;
+    assigned_to?: User;
     due_date?: string;
     started_at?: string;
     completed_at?: string;
@@ -205,14 +205,14 @@ declare global {
   }
 
   export interface DashboardStats {
-    totalRevenue: number;
-    monthlyRevenue: number;
-    activeContent: number;
-    pendingTasks: number;
-    teamMembers: number;
-    upcomingPublications: number;
-    revenueGrowth: number;
-    taskCompletion: number;
+    total_revenue: number;
+    monthly_revenue: number;
+    active_content: number;
+    pending_tasks: number;
+    team_members: number;
+    upcoming_publications: number;
+    revenue_growth: number;
+    task_completion: number;
   }
 
   export interface RevenueByPlatform {
@@ -249,37 +249,6 @@ declare global {
     target: string;
     timestamp: string;
     type: "content" | "revenue" | "task" | "system";
-  }
-
-  export interface Organization {
-    id: string;
-    name: string;
-    slug: string;
-    createdAt: string;
-    updatedAt: string;
-    timezone: string;
-    locale: string;
-    currency: string;
-    whiteLabel: boolean;
-    branding: Record<string, any>;
-    billingInfo: Record<string, any>;
-    settings: Record<string, any>;
-  }
-
-  export interface PendingTask {
-    id: string;
-    title: string;
-    status: "todo" | "in_progress" | "blocked" | "done" | "archived";
-    priority: number;
-    due_date: string | null;
-    assigned_to: {
-      id: string;
-      name: string;
-    } | null;
-    content_item: {
-      id: string;
-      title: string;
-    } | null;
   }
 
   export interface RevenueTrend {

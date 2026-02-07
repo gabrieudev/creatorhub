@@ -1,5 +1,18 @@
 "use client";
 
+import { EditTaskModal } from "@/components/edit-task-modal/edit-task-modal";
+import { NewContentModal } from "@/components/new-content-modal/new-content-modal";
+import { NewTaskModal } from "@/components/new-task-modal/new-task-modal";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,6 +23,13 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -17,21 +37,23 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ContentPlatform, ContentStatus } from "@/shared/enums";
-import { motion } from "framer-motion";
+import { AlertDialogTrigger } from "@radix-ui/react-alert-dialog";
+import { motion, type Variants } from "framer-motion";
 import {
   BarChart3,
   Calendar,
   CheckCircle,
   Clock,
   DollarSign,
+  Edit,
   Eye,
   Facebook,
   Instagram,
   MessageSquare,
   MoreVertical,
   Music,
-  Plus,
   Target,
+  Trash2,
   TrendingUp,
   Twitch,
   Users,
@@ -43,8 +65,6 @@ import PlatformDistribution from "./components/platform-distribution";
 import RevenueChart from "./components/revenue-chart";
 import StatCard from "./components/stat-card";
 import useDashboard from "./use-dashboard";
-import { NewContentModal } from "@/components/new-content-modal/new-content-modal";
-import { NewTaskModal } from "@/components/new-task-modal/new-task-modal";
 
 export default function DashboardPage() {
   const {
@@ -72,6 +92,15 @@ export default function DashboardPage() {
     organizationId,
     refetchPendingTasks,
     refetchContentPerformance,
+    dropdownVariants,
+    menuItemVariants,
+    openEditTaskModal,
+    setOpenEditTaskModal,
+    isLoadingContentItems,
+    isLoadingOrganizationMembers,
+    organizationMembers,
+    contentItems,
+    handleDeleteTask,
   } = useDashboard();
 
   return (
@@ -127,8 +156,8 @@ export default function DashboardPage() {
         >
           <StatCard
             title="Receita Total"
-            value={formatCurrency(dashboardStats?.totalRevenue ?? 0)}
-            change={formatPercentage(dashboardStats?.revenueGrowth ?? 0)}
+            value={formatCurrency(dashboardStats?.total_revenue ?? 0)}
+            change={formatPercentage(dashboardStats?.revenue_growth ?? 0)}
             isPositive={true}
             icon={DollarSign}
             iconColor="text-green-600 dark:text-green-400"
@@ -137,8 +166,8 @@ export default function DashboardPage() {
           />
           <StatCard
             title="Receita do Mês"
-            value={formatCurrency(dashboardStats?.monthlyRevenue ?? 0)}
-            change={formatPercentage(dashboardStats?.revenueGrowth ?? 0)}
+            value={formatCurrency(dashboardStats?.monthly_revenue ?? 0)}
+            change={formatPercentage(dashboardStats?.revenue_growth ?? 0)}
             isPositive={true}
             icon={TrendingUp}
             iconColor="text-blue-600 dark:text-blue-400"
@@ -147,8 +176,8 @@ export default function DashboardPage() {
           />
           <StatCard
             title="Conteúdos em Produção"
-            value={dashboardStats?.activeContent.toString() ?? "0"}
-            change={`${dashboardStats?.upcomingPublications ?? 0} agendados`}
+            value={dashboardStats?.active_content.toString() ?? "0"}
+            change={`${dashboardStats?.upcoming_publications ?? 0} agendados`}
             isPositive={true}
             icon={Video}
             iconColor="text-purple-600 dark:text-purple-400"
@@ -157,9 +186,9 @@ export default function DashboardPage() {
           />
           <StatCard
             title="Tarefas Pendentes"
-            value={dashboardStats?.pendingTasks.toString() ?? "0"}
-            change={`${dashboardStats?.taskCompletion ?? 0}% completado`}
-            isPositive={(dashboardStats?.taskCompletion ?? 0) >= 70}
+            value={dashboardStats?.pending_tasks.toString() ?? "0"}
+            change={`${dashboardStats?.task_completion ?? 0}% completado`}
+            isPositive={(dashboardStats?.task_completion ?? 0) >= 70}
             icon={CheckCircle}
             iconColor="text-amber-600 dark:text-amber-400"
             iconBgColor="bg-amber-100 dark:bg-amber-900/30"
@@ -439,6 +468,10 @@ export default function DashboardPage() {
                     setOpenNewTaskModal={setOpenNewTaskModal}
                     openNewTaskModal={openNewTaskModal}
                     refetchPendingTasks={refetchPendingTasks}
+                    contentItems={contentItems}
+                    organizationMembers={organizationMembers}
+                    isLoadingContentItems={isLoadingContentItems}
+                    isLoadingOrganizationMembers={isLoadingOrganizationMembers}
                   />
                   <Button variant="ghost" size="sm" className="cursor-pointer">
                     Ver todas
@@ -503,13 +536,136 @@ export default function DashboardPage() {
                                   <h4 className="font-medium text-foreground">
                                     {task.title}
                                   </h4>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-6 w-6 cursor-pointer"
-                                  >
-                                    <MoreVertical className="h-4 w-4" />
-                                  </Button>
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <motion.div
+                                        whileHover={{ scale: 1.1 }}
+                                        whileTap={{ scale: 0.95 }}
+                                      >
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-6 w-6 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800"
+                                        >
+                                          <MoreVertical className="h-4 w-4" />
+                                        </Button>
+                                      </motion.div>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent
+                                      align="end"
+                                      className="w-40"
+                                    >
+                                      <motion.div
+                                        initial="hidden"
+                                        animate="visible"
+                                        variants={dropdownVariants as Variants}
+                                      >
+                                        <DropdownMenuItem
+                                          onClick={() =>
+                                            setOpenEditTaskModal(true)
+                                          }
+                                          onSelect={(e) => e.preventDefault()}
+                                          className="cursor-pointer"
+                                        >
+                                          <motion.div
+                                            custom={0}
+                                            variants={menuItemVariants}
+                                            className="flex items-center gap-2"
+                                          >
+                                            <div className="flex items-center gap-2 text-sm text-yellow-600 cursor-pointer transition-all duration-300">
+                                              <Edit className="text-yellow-600" />
+                                              Editar Tarefa
+                                            </div>
+                                          </motion.div>
+                                        </DropdownMenuItem>
+
+                                        {/* Modal de Edição */}
+                                        <EditTaskModal
+                                          open={openEditTaskModal}
+                                          onOpenChange={setOpenEditTaskModal}
+                                          task={task}
+                                          contentItems={contentItems}
+                                          organizationMembers={
+                                            organizationMembers
+                                          }
+                                          isLoadingContentItems={
+                                            isLoadingContentItems
+                                          }
+                                          isLoadingOrganizationMembers={
+                                            isLoadingOrganizationMembers
+                                          }
+                                        />
+
+                                        <DropdownMenuSeparator />
+
+                                        <AlertDialog>
+                                          {/* TRIGGER */}
+                                          <AlertDialogTrigger asChild>
+                                            <DropdownMenuItem
+                                              onSelect={(e) =>
+                                                e.preventDefault()
+                                              }
+                                              className="cursor-pointer"
+                                            >
+                                              <motion.div
+                                                custom={1}
+                                                variants={menuItemVariants}
+                                                className="flex items-center gap-2 text-red-600"
+                                              >
+                                                <Trash2 className="h-5 w-5 text-red-600" />
+                                                Excluir
+                                              </motion.div>
+                                            </DropdownMenuItem>
+                                          </AlertDialogTrigger>
+
+                                          {/* CONTENT */}
+                                          <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                              <AlertDialogTitle className="text-lg flex items-center gap-2">
+                                                Excluir Tarefa
+                                              </AlertDialogTitle>
+
+                                              <AlertDialogDescription className="text-base">
+                                                Você tem certeza que deseja
+                                                excluir a tarefa{" "}
+                                                <span className="font-semibold text-gray-900 dark:text-gray-100">
+                                                  {task.title}
+                                                </span>
+                                                ?
+                                                <br />
+                                                <span className="text-sm text-gray-500 dark:text-gray-400 mt-1 block">
+                                                  Esta ação não pode ser
+                                                  desfeita.
+                                                </span>
+                                              </AlertDialogDescription>
+                                            </AlertDialogHeader>
+
+                                            <AlertDialogFooter>
+                                              <motion.div
+                                                className="flex gap-3"
+                                                initial={{ opacity: 0 }}
+                                                animate={{ opacity: 1 }}
+                                                transition={{ delay: 0.1 }}
+                                              >
+                                                <AlertDialogCancel className="transition-all duration-300 hover:scale-105">
+                                                  Cancelar
+                                                </AlertDialogCancel>
+
+                                                <AlertDialogAction
+                                                  onClick={() => {
+                                                    handleDeleteTask(task.id);
+                                                  }}
+                                                  className="bg-red-600 hover:bg-red-700 transition-all duration-300 hover:scale-105"
+                                                >
+                                                  Confirmar
+                                                </AlertDialogAction>
+                                              </motion.div>
+                                            </AlertDialogFooter>
+                                          </AlertDialogContent>
+                                        </AlertDialog>
+                                      </motion.div>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
                                 </div>
 
                                 {task.content_item && (

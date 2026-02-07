@@ -4,7 +4,6 @@ import api from "@/lib/api";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   useMutation,
-  useQuery,
   useQueryClient,
   type QueryObserverResult,
   type RefetchOptions,
@@ -75,26 +74,26 @@ const formSchema = z.object({
 
 type TaskFormData = z.infer<typeof formSchema>;
 
-// Tipos para as props
-interface ContentItem {
-  id: string;
-  title: string;
-  platform?: string;
-  status: string;
-}
-
 type UseNewTaskModalProps = {
   organizationId?: string | null;
   setOpenNewTaskModal: React.Dispatch<React.SetStateAction<boolean>>;
   refetchPendingTasks: (
     options?: RefetchOptions,
-  ) => Promise<QueryObserverResult<PendingTask[], Error>>;
+  ) => Promise<QueryObserverResult<Task[], Error>>;
+  contentItems: ContentItem[];
+  organizationMembers: OrganizationMember[];
+  isLoadingContentItems: boolean;
+  isLoadingOrganizationMembers: boolean;
 };
 
 export default function useNewTaskModal({
   organizationId,
   setOpenNewTaskModal,
   refetchPendingTasks,
+  contentItems,
+  organizationMembers,
+  isLoadingContentItems,
+  isLoadingOrganizationMembers,
 }: UseNewTaskModalProps) {
   const [activeTab, setActiveTab] = useState("details");
   const [tags, setTags] = useState<string[]>([]);
@@ -119,32 +118,6 @@ export default function useNewTaskModal({
       },
     });
   }
-
-  const { data: contentItems = [], isPending: isLoadingContentItems } =
-    useQuery<ContentItem[]>({
-      queryKey: ["contentItems", organizationId],
-      enabled: !!organizationId && contentSearchOpen,
-      queryFn: async () => {
-        const { data } = await api.get(
-          `/organizations/${organizationId}/content-items`,
-        );
-        return data;
-      },
-    });
-
-  const {
-    data: organizationMembers = [],
-    isPending: isLoadingOrganizationMembers,
-  } = useQuery<OrganizationMember[]>({
-    queryKey: ["organizationMembers", organizationId],
-    enabled: !!organizationId && assigneeSearchOpen,
-    queryFn: async () => {
-      const { data } = await api.get(
-        `/organizations/${organizationId}/members`,
-      );
-      return data;
-    },
-  });
 
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -262,6 +235,10 @@ export default function useNewTaskModal({
     : null;
 
   return {
+    contentSearchOpen,
+    setContentSearchOpen,
+    assigneeSearchOpen,
+    setAssigneeSearchOpen,
     activeTab,
     setActiveTab,
     form,
@@ -278,10 +255,6 @@ export default function useNewTaskModal({
     taskOnSubmit,
     contentItems,
     organizationMembers,
-    contentSearchOpen,
-    setContentSearchOpen,
-    assigneeSearchOpen,
-    setAssigneeSearchOpen,
     modalVariants,
     tabContentVariants,
     selectedContentItem,

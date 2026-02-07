@@ -3,8 +3,9 @@
 import api from "@/lib/api";
 import { useSession } from "@/providers/auth-provider";
 import { ContentPlatform, ContentStatus, TaskStatus } from "@/shared/enums";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 
 export interface RevenueTrend {
   period: string;
@@ -56,6 +57,8 @@ export default function useDashboard() {
   const organizationId = useSelectedOrganization();
   const [openNewContentModal, setOpenNewContentModal] = useState(false);
   const [openNewTaskModal, setOpenNewTaskModal] = useState(false);
+  const [openEditTaskModal, setOpenEditTaskModal] = useState(false);
+  const { mutate: deleteTask, isPending: isDeletingTask } = useDeleteTask();
 
   function normalizeBackendPeriod(period: string, range: string) {
     if (!period) return period;
@@ -291,7 +294,7 @@ export default function useDashboard() {
     }).data || [];
 
   const { data: pendingTasks = [], refetch: refetchPendingTasks } = useQuery<
-    PendingTask[]
+    Task[]
   >({
     queryKey: ["pendingTasks", organizationId],
     enabled: !!organizationId,
@@ -440,7 +443,7 @@ export default function useDashboard() {
     },
   } as const;
 
-  const tasksByStatus = pendingTasks.reduce<Record<string, PendingTask[]>>(
+  const tasksByStatus = pendingTasks.reduce<Record<string, Task[]>>(
     (acc, task) => {
       acc[task.status] ??= [];
       acc[task.status].push(task);
@@ -449,7 +452,91 @@ export default function useDashboard() {
     {},
   );
 
+  const dropdownVariants = {
+    hidden: { opacity: 0, scale: 0.95, y: -10 },
+    visible: {
+      opacity: 1,
+      scale: 1,
+      y: 0,
+      transition: {
+        type: "spring",
+        damping: 25,
+        stiffness: 300,
+      },
+    },
+  };
+
+  const menuItemVariants = {
+    hidden: { x: -10, opacity: 0 },
+    visible: (i: number) => ({
+      x: 0,
+      opacity: 1,
+      transition: {
+        delay: i * 0.05,
+        duration: 0.2,
+      },
+    }),
+  };
+
+  const { data: contentItems = [], isPending: isLoadingContentItems } =
+    useQuery<ContentItem[]>({
+      queryKey: ["contentItems", organizationId],
+      enabled: !!organizationId && (openEditTaskModal || openNewTaskModal),
+      queryFn: async () => {
+        const { data } = await api.get(
+          `/organizations/${organizationId}/content-items`,
+        );
+        return data;
+      },
+    });
+
+  const {
+    data: organizationMembers = [],
+    isPending: isLoadingOrganizationMembers,
+  } = useQuery<OrganizationMember[]>({
+    queryKey: ["organizationMembers", organizationId],
+    enabled: !!organizationId && (openEditTaskModal || openNewTaskModal),
+    queryFn: async () => {
+      const { data } = await api.get(
+        `/organizations/${organizationId}/members`,
+      );
+      return data;
+    },
+  });
+
+  function useDeleteTask() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+      mutationFn: async (taskId: string) => {
+        await api.delete(`/tasks/${taskId}`);
+      },
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      },
+    });
+  }
+
+  const handleDeleteTask = (taskId: string) => {
+    deleteTask(taskId, {
+      onSuccess: () => {
+        toast.success("Tarefa excluída com sucesso!");
+        refetchPendingTasks();
+      },
+      onError: (error) => {
+        toast.error(`Erro ao excluir tarefa: ${error.message}`);
+      },
+    });
+  };
+
   return {
+    handleDeleteTask,
+    contentItems,
+    organizationMembers,
+    isLoadingContentItems,
+    isLoadingOrganizationMembers,
+    dropdownVariants,
+    menuItemVariants,
     revenueTrendMap,
     platformColors,
     statusColors,
@@ -479,5 +566,7 @@ export default function useDashboard() {
     organizationId,
     refetchPendingTasks,
     refetchContentPerformance,
+    openEditTaskModal,
+    setOpenEditTaskModal,
   };
 }
